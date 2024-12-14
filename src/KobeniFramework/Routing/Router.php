@@ -134,20 +134,21 @@ class Router
             return self::$pdo;
         }
 
-        $rootPath = dirname(dirname(dirname(dirname(dirname(__DIR__)))));
+        $projectRoot = dirname(dirname(getcwd()));
 
-        $configPaths = [
-            $rootPath . '/config/Database.php',
-            getcwd() . '/config/Database.php',   // Backup path
-        ];
+        echo "Project Root: " . $projectRoot . "\n";
 
-        echo "Checking database config paths:\n";
-        foreach ($configPaths as $path) {
-            echo "Looking for: " . $path . "\n";
-            echo "Exists: " . (file_exists($path) ? 'Yes' : 'No') . "\n";
+        $configPath = $projectRoot . '/config/Database.php';
+
+        echo "Looking for config at: " . $configPath . "\n";
+        echo "Exists: " . (file_exists($configPath) ? 'Yes' : 'No') . "\n";
+
+        if (!file_exists($configPath)) {
+            throw new \RuntimeException('Database configuration not found');
         }
 
-        $config = null;
+        $config = require $configPath;
+
         foreach ($configPaths as $path) {
             if (file_exists($path)) {
                 $config = require $path;
