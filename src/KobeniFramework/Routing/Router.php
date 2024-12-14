@@ -70,11 +70,11 @@ class Router
     {
         $uri = trim($uri, '/');
 
-        // echo "Requested Method: " . $method . "\n";
-        // echo "Requested URI: " . $uri . "\n";
+        echo "Requested Method: " . $method . "\n";
+        echo "Requested URI: " . $uri . "\n";
 
         foreach ($this->routes as $route) {
-            // echo "Comparing with route: " . $route->getMethod() . " " . $route->getRoute() . "\n";
+            echo "Comparing with route: " . $route->getMethod() . " " . $route->getRoute() . "\n";
             if ($this->matchRoute($route, $method, $uri)) {
                 return $this->handleRoute($route);
             }
