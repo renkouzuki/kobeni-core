@@ -75,6 +75,7 @@ class Router
 
         foreach ($this->routes as $route) {
             echo "Comparing with route: " . $route->getMethod() . " " . $route->getRoute() . "\n";
+
             if ($this->matchRoute($route, $method, $uri)) {
                 return $this->handleRoute($route);
             }
@@ -92,7 +93,7 @@ class Router
         $pattern = $this->createPatternFromRoute($route->getRoute());
 
         if (preg_match($pattern, $uri, $matches)) {
-            array_shift($matches); // remove this the full match
+            array_shift($matches);
             $this->parameters = $matches;
             $route->setParameters($matches);
             return true;
