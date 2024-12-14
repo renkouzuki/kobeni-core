@@ -70,11 +70,11 @@ class Router
     {
         $uri = trim($uri, '/');
 
-        echo "Requested Method: " . $method . "\n";
-        echo "Requested URI: " . $uri . "\n";
+        // echo "Requested Method: " . $method . "\n";
+        // echo "Requested URI: " . $uri . "\n";
 
         foreach ($this->routes as $route) {
-            echo "Comparing with route: " . $route->getMethod() . " " . $route->getRoute() . "\n";
+            // echo "Comparing with route: " . $route->getMethod() . " " . $route->getRoute() . "\n";
 
             if ($this->matchRoute($route, $method, $uri)) {
                 return $this->handleRoute($route);
@@ -134,14 +134,14 @@ class Router
             return self::$pdo;
         }
 
-        $projectRoot = dirname(dirname(getcwd()));
+        $projectRoot = dirname(getcwd());
 
-        echo "Project Root: " . $projectRoot . "\n";
+        // echo "Project Root: " . $projectRoot . "\n";
 
         $configPath = $projectRoot . '/config/Database.php';
 
-        echo "Looking for config at: " . $configPath . "\n";
-        echo "Exists: " . (file_exists($configPath) ? 'Yes' : 'No') . "\n";
+        // echo "Looking for config at: " . $configPath . "\n";
+        // echo "Exists: " . (file_exists($configPath) ? 'Yes' : 'No') . "\n";
 
         if (!file_exists($configPath)) {
             throw new \RuntimeException('Database configuration not found');
