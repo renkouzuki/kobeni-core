@@ -134,9 +134,23 @@ class Router
             return self::$pdo;
         }
 
-        $config = $this->app ?
-            $this->app->getConfig('database') :
-            require __DIR__ . '/../../../Config/Database.php';
+        // Try multiple config locations
+        $configPaths = [
+            __DIR__ . '/../../../Config/Database.php',  // Old path
+            getcwd() . '/config/Database.php',          // New path in main framework
+        ];
+
+        $config = null;
+        foreach ($configPaths as $path) {
+            if (file_exists($path)) {
+                $config = require $path;
+                break;
+            }
+        }
+
+        if (!$config) {
+            throw new \RuntimeException('Database configuration not found');
+        }
 
         $dsn = sprintf(
             "mysql:host=%s;port=%s;dbname=%s",
