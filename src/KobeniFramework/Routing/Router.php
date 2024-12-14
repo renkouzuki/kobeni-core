@@ -140,6 +140,12 @@ class Router
             getcwd() . '/config/Database.php',          // New path in main framework
         ];
 
+        echo "Checking database config paths:\n";
+        foreach ($configPaths as $path) {
+            echo "Looking for: " . $path . "\n";
+            echo "Exists: " . (file_exists($path) ? 'Yes' : 'No') . "\n";
+        }
+
         $config = null;
         foreach ($configPaths as $path) {
             if (file_exists($path)) {

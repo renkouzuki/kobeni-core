@@ -8,7 +8,7 @@ class View
     {
         $rootPath = dirname(dirname(dirname(__DIR__)));
         $viewFile = $rootPath . '/resources/views/' . $view . '.php';
-        
+
         // var_dump([
         //     'Requested View' => $view,
         //     'Root Path' => $rootPath,
@@ -16,13 +16,16 @@ class View
         //     'File Exists' => file_exists($viewFile),
         //     'Current Directory' => __DIR__,
         // ]);
-        
+
+        echo "Looking for view at: " . $viewFile . "\n";
+        echo "View exists: " . (file_exists($viewFile) ? 'Yes' : 'No') . "\n";
+
         if (!file_exists($viewFile)) {
             throw new \Exception("View not found: {$view}");
         }
 
         extract($data);
-        
+
         ob_start();
         include $viewFile;
         return ob_get_clean();
