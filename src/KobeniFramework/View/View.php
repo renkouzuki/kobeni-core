@@ -6,17 +6,11 @@ class View
 {
     public static function make($view, $data = [])
     {
-        $rootPath = dirname(dirname(dirname(__DIR__)));
+        // Get the main framework root path (going up from vendor directory)
+        $rootPath = dirname(dirname(dirname(dirname(dirname(__DIR__)))));
         $viewFile = $rootPath . '/resources/views/' . $view . '.php';
 
-        // var_dump([
-        //     'Requested View' => $view,
-        //     'Root Path' => $rootPath,
-        //     'Full Path' => $viewFile,
-        //     'File Exists' => file_exists($viewFile),
-        //     'Current Directory' => __DIR__,
-        // ]);
-
+        // Debug view path
         echo "Looking for view at: " . $viewFile . "\n";
         echo "View exists: " . (file_exists($viewFile) ? 'Yes' : 'No') . "\n";
 

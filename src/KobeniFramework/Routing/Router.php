@@ -134,10 +134,11 @@ class Router
             return self::$pdo;
         }
 
-        // Try multiple config locations
+        $rootPath = dirname(dirname(dirname(dirname(dirname(__DIR__)))));
+
         $configPaths = [
-            __DIR__ . '/../../../Config/Database.php',  // Old path
-            getcwd() . '/config/Database.php',          // New path in main framework
+            $rootPath . '/config/Database.php',
+            getcwd() . '/config/Database.php',   // Backup path
         ];
 
         echo "Checking database config paths:\n";
