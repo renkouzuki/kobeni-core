@@ -1,0 +1,14 @@
+{
+    "name": "renkouzuki/kobeni-core",
+    "description": "The Kobeni Framework core",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "KobeniFramework\\": "src/KobeniFramework/"
+        }
+    }
+}
