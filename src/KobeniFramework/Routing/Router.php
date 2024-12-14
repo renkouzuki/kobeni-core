@@ -138,7 +138,7 @@ class Router
 
         // echo "Project Root: " . $projectRoot . "\n";
 
-        $configPath = $projectRoot . '/config/Database.php';
+        $configPath = $projectRoot . '/config/Database.php'; /// u can actually make this to object to be loop to find instead
 
         // echo "Looking for config at: " . $configPath . "\n";
         // echo "Exists: " . (file_exists($configPath) ? 'Yes' : 'No') . "\n";
@@ -149,12 +149,12 @@ class Router
 
         $config = require $configPath;
 
-        foreach ($configPaths as $path) {
-            if (file_exists($path)) {
-                $config = require $path;
-                break;
-            }
-        }
+        // foreach ($configPaths as $path) {
+        //     if (file_exists($path)) {
+        //         $config = require $path; 
+        //         break;
+        //     }
+        // } see here this actually will work if there is no prime root
 
         if (!$config) {
             throw new \RuntimeException('Database configuration not found');
