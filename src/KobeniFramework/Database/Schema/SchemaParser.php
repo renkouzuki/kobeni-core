@@ -32,7 +32,7 @@ class SchemaParser
 
                 // Handle unique constraint
                 if (isset($field['attributes']) && in_array('@unique', $field['attributes'])) {
-                    $constraints[] = sprintf('"UNIQUE KEY `%s_unique` (`%s`)"', $fieldName, $fieldName);
+                    $constraints[] = sprintf('UNIQUE KEY `%s_unique` (`%s`)', $fieldName, $fieldName);
                 }
             }
 
@@ -43,15 +43,24 @@ class SchemaParser
                 }
             }
 
-            // Combine columns and constraints
-            $allDefinitions = array_merge($columns, $constraints);
-            $tableFields = implode(",\n            ", $allDefinitions);
+            // Combine columns and add constraints at the end
+            $tableDef = [];
+            foreach ($columns as $column) {
+                $tableDef[] = "            " . $column;
+            }
+            if (!empty($constraints)) {
+                foreach ($constraints as $constraint) {
+                    $tableDef[] = sprintf('            "%s"', $constraint);
+                }
+            }
 
-            $tables[] = <<<CODE
-            \$this->createTable("{$model['name']}", [
-            {$tableFields}
-        ]);
-CODE;
+            $tables[] = sprintf(
+                '$this->createTable("%s", [%s%s%s]);',
+                $model['name'],
+                "\n",
+                implode(",\n", $tableDef),
+                "\n        "
+            );
         }
 
         return <<<PHP
@@ -148,7 +157,7 @@ PHP;
     protected function generateConstraint(array $relation): string
     {
         return sprintf(
-            '"CONSTRAINT `fk_%s_%s` FOREIGN KEY (`%s`) REFERENCES `%s`(`%s`) ON DELETE CASCADE ON UPDATE CASCADE"',
+            'CONSTRAINT `fk_%s_%s` FOREIGN KEY (`%s`) REFERENCES `%s`(`%s`) ON DELETE CASCADE ON UPDATE CASCADE',
             $relation['model'],
             $relation['foreign_key'][0],
             $relation['foreign_key'][0],
