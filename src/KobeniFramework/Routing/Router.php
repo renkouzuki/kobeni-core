@@ -3,7 +3,6 @@
 namespace KobeniFramework\Routing;
 
 use KobeniFramework\Database\DB;
-use PDO;
 use PDOException;
 use KobeniFramework\Foundation\Application;
 
@@ -44,6 +43,15 @@ class Router
     public function addRoute($method, $route, $action)
     {
         $route = trim($route, '/');
+
+        if ($this->currentGroup && isset($this->currentGroup['middleware'])) {
+            if (is_string($action)) {
+                $action = [
+                    'uses' => $action,
+                    'middleware' => $this->currentGroup['middleware']
+                ];
+            }
+        }
 
         if ($this->currentGroup) {
             if (isset($this->currentGroup['prefix'])) {
@@ -126,6 +134,25 @@ class Router
 
     protected function runMiddleware($route, $callback)
     {
+        if (is_array($route->getAction()) && isset($route->getAction()['middleware'])) {
+            var_dump('Checking middleware'); 
+            var_dump($route->getAction());   
+            
+            $middlewares = (array) $route->getAction()['middleware'];
+            
+            foreach ($middlewares as $middleware) {
+                $middlewareClass = "App\\Middleware\\{$middleware}Middleware"; /// this is suffix middleware i keep forgot about this
+                var_dump($middlewareClass);  
+                
+                if (!class_exists($middlewareClass)) {
+                    throw new \RuntimeException("Middleware {$middleware} not found: {$middlewareClass}");
+                }
+                
+                $middlewareInstance = new $middlewareClass();
+                return $middlewareInstance->handle($callback);
+            }
+        }
+
         return $callback();
     }
 
@@ -143,7 +170,11 @@ class Router
         if (is_callable($action)) {
             return call_user_func_array($action, $parameters);
         }
-
+    
+        if (is_array($action) && isset($action['uses'])) {
+            $action = $action['uses'];
+        }
+    
         list($controller, $method) = explode('@', $action);
         $controllerInstance = new $controller();
         return call_user_func_array([$controllerInstance, $method], $parameters);
