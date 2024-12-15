@@ -41,9 +41,9 @@ class DB
     {
         $config = self::loadConfig();
 
-        echo "Using database configuration:\n";
-        echo "Host: " . $config['DB_HOST'] . "\n";
-        echo "Database: " . $config['DB_DATABASE'] . "\n";
+        // echo "Using database configuration:\n";
+        // echo "Host: " . $config['DB_HOST'] . "\n";
+        // echo "Database: " . $config['DB_DATABASE'] . "\n";
 
         $dsn = sprintf(
             "mysql:host=%s;port=%s;dbname=%s",
@@ -76,10 +76,10 @@ class DB
             __DIR__ . '/../../../../config/Database.php'
         ];
 
-        echo "Looking for config file in:\n";
-        foreach ($possiblePaths as $path) {
-            echo "- $path" . (file_exists($path) ? " (Found!)" : " (Not found)") . "\n";
-        }
+        // echo "Looking for config file in:\n";
+        // foreach ($possiblePaths as $path) {
+        //     echo "- $path" . (file_exists($path) ? " (Found!)" : " (Not found)") . "\n";
+        // }
 
         foreach ($possiblePaths as $path) {
             if (file_exists($path)) {
