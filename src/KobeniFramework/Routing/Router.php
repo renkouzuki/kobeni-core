@@ -2,6 +2,7 @@
 
 namespace KobeniFramework\Routing;
 
+use KobeniFramework\Database\DB;
 use PDO;
 use PDOException;
 use KobeniFramework\Foundation\Application;
@@ -130,55 +131,8 @@ class Router
 
     public function connectDatabase()
     {
-        if (self::$pdo !== null) {
-            return self::$pdo;
-        }
-
-        $projectRoot = dirname(getcwd());
-
-        // echo "Project Root: " . $projectRoot . "\n";
-
-        $configPath = $projectRoot . '/config/Database.php'; /// u can actually make this to object to be loop to find instead
-
-        // echo "Looking for config at: " . $configPath . "\n";
-        // echo "Exists: " . (file_exists($configPath) ? 'Yes' : 'No') . "\n";
-
-        if (!file_exists($configPath)) {
-            throw new \RuntimeException('Database configuration not found');
-        }
-
-        $config = require $configPath;
-
-        // foreach ($configPaths as $path) {
-        //     if (file_exists($path)) {
-        //         $config = require $path; 
-        //         break;
-        //     }
-        // } see here this actually will work if there is no prime root
-
-        if (!$config) {
-            throw new \RuntimeException('Database configuration not found');
-        }
-
-        $dsn = sprintf(
-            "mysql:host=%s;port=%s;dbname=%s",
-            $config['DB_HOST'],
-            $config['DB_PORT'],
-            $config['DB_DATABASE']
-        );
-
         try {
-            self::$pdo = new PDO(
-                $dsn,
-                $config['DB_USERNAME'],
-                $config['DB_PASSWORD'],
-                [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false
-                ]
-            );
-            return self::$pdo;
+            return DB::getInstance();
         } catch (PDOException $e) {
             throw new PDOException("Database connection failed: " . $e->getMessage());
         }
