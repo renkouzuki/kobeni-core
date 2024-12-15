@@ -20,6 +20,7 @@ class Application
     {
         $this->add(new Commands\MakeCommandCommand());
         $this->add(new Commands\StartCommand());
+        $this->add(new Commands\MakeMigrationCommand());
     }
 
     public function add(Command $command)
