@@ -41,15 +41,37 @@ PHP;
     protected function generateUpMethod(Schema $schema): string
     {
         $code = [];
+
+        // First, create independent tables (those without foreign keys)
         foreach ($schema->getModels() as $model) {
-            $code[] = $this->generateCreateTableStatement($model);
+            if (!$this->hasRelationships($model['name'], $schema->getRelationships())) {
+                $code[] = $this->generateCreateTableStatement($model);
+            }
         }
 
+        // Then create tables with foreign keys
+        foreach ($schema->getModels() as $model) {
+            if ($this->hasRelationships($model['name'], $schema->getRelationships())) {
+                $code[] = $this->generateCreateTableStatement($model);
+            }
+        }
+
+        // Finally add the foreign key constraints
         foreach ($schema->getRelationships() as $relation) {
             $code[] = $this->generateRelationshipStatement($relation);
         }
 
-        return implode("\n\n", $code);
+        return implode("\n\n        ", $code);
+    }
+
+    protected function hasRelationships(string $modelName, array $relationships): bool
+    {
+        foreach ($relationships as $relation) {
+            if (strtolower($relation['model']) === strtolower($modelName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected function generateDownMethod(Schema $schema): string
@@ -66,6 +88,9 @@ PHP;
 
     protected function generateCreateTableStatement(array $model): string
     {
+        // Debug line
+        error_log("Generating table for model: " . json_encode($model));
+
         $fields = [];
         foreach ($model['fields'] as $name => $field) {
             $fields[] = $this->generateFieldDefinition($name, $field);
@@ -78,18 +103,19 @@ PHP;
         );
     }
 
+
     protected function generateRelationshipStatement(array $relation): string
     {
-        if ($relation['type'] === 'relation') {
-            $foreignKey = implode('", "', (array)$relation['foreign_key']);
-            $references = implode('", "', (array)$relation['references']);
+        // Debug line
+        error_log("Generating relationship: " . json_encode($relation));
 
+        if ($relation['type'] === 'relation') {
             return sprintf(
-                '$this->addForeignKey("%s", "%s", ["%s"], ["%s"]);',
-                $relation['model'],
-                $relation['name'],
-                $foreignKey,
-                $references
+                '$this->addForeignKey("%s", "%s", "%s", "%s");',
+                $relation['model'],                  // table name
+                $relation['foreign_key'][0],         // foreign key column
+                strtolower($relation['name']),       // referenced table
+                $relation['references'][0]           // referenced column
             );
         }
         return '';
@@ -97,9 +123,12 @@ PHP;
 
     protected function generateFieldDefinition(string $name, array $field): string
     {
-        $attributes = $this->generateAttributes($field['attributes'] ?? []);
+        // Debug line
+        error_log("Generating field definition for: $name - " . json_encode($field));
+
         $type = $this->mapFieldType($field['type']);
         $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
+        $attributes = $this->generateAttributes($field['attributes'] ?? []);
 
         return sprintf(
             '"%s" => "%s %s%s"',
