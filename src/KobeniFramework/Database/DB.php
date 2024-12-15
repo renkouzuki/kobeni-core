@@ -2,6 +2,7 @@
 
 namespace KobeniFramework\Database;
 
+use KobeniFramework\Environment\EnvLoader;
 use PDO;
 use KobeniFramework\Routing\Router;
 use PDOException;
@@ -13,10 +14,27 @@ class DB
     public static function getInstance(): PDO
     {
         if (self::$instance === null) {
+            self::loadEnvironment();
             self::$instance = self::createConnection();
         }
 
         return self::$instance;
+    }
+
+    protected static function loadEnvironment(): void
+    {
+        $paths = [
+            getcwd() . '/.env',
+            dirname(getcwd()) . '/.env',
+            __DIR__ . '/../../../../.env'
+        ];
+
+        foreach ($paths as $path) {
+            if (file_exists($path)) {
+                EnvLoader::load($path);
+                break;
+            }
+        }
     }
 
     protected static function createConnection(): PDO
@@ -53,12 +71,11 @@ class DB
     protected static function loadConfig(): array
     {
         $possiblePaths = [
-            getcwd() . '/config/Database.php',           // main project root this for some reasom sometime work sometime not
-            dirname(getcwd()) . '/config/Database.php',  // 1 level up
-            __DIR__ . '/../../../../config/Database.php' // from vendor dir
+            getcwd() . '/config/Database.php',
+            dirname(getcwd()) . '/config/Database.php',
+            __DIR__ . '/../../../../config/Database.php'
         ];
 
-        // Debug info
         echo "Looking for config file in:\n";
         foreach ($possiblePaths as $path) {
             echo "- $path" . (file_exists($path) ? " (Found!)" : " (Not found)") . "\n";
