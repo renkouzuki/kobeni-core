@@ -10,6 +10,7 @@ class ModelBuilder
     ];
     
     protected array $relationships = [];
+    protected ?string $lastField = null;
     
     public function __construct(protected string $name)
     {
@@ -19,24 +20,37 @@ class ModelBuilder
     public function id(string $name = 'id'): self
     {
         $this->field($name, 'uuid', ['@id', '@default(uuid())']);
+        $this->lastField = $name;
         return $this;
     }
     
     public function string(string $name, bool $nullable = false): self
     {
         $this->field($name, 'string', [], $nullable);
+        $this->lastField = $name;
         return $this;
     }
     
     public function datetime(string $name, bool $nullable = false): self
     {
         $this->field($name, 'datetime', [], $nullable);
+        $this->lastField = $name;
         return $this;
     }
     
-    public function unique(string $field): self
+    public function unique(): self
     {
-        $this->definition['fields'][$field]['attributes'][] = '@unique';
+        if ($this->lastField) {
+            $this->definition['fields'][$this->lastField]['attributes'][] = '@unique';
+        }
+        return $this;
+    }
+
+    public function default(string $value): self
+    {
+        if ($this->lastField) {
+            $this->definition['fields'][$this->lastField]['attributes'][] = "@default($value)";
+        }
         return $this;
     }
     
