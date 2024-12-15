@@ -6,7 +6,14 @@ class Schema
 {
     protected array $models = [];
     protected array $relationships = [];
-    
+
+    public static function define(callable $callback): Schema
+    {
+        $schema = new static();
+        $callback($schema);
+        return $schema;
+    }
+
     public function model(string $name, callable $callback): void
     {
         $modelBuilder = new ModelBuilder($name);
