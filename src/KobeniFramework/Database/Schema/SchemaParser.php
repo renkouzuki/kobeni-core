@@ -115,9 +115,12 @@ PHP;
             if ($attr === '@unique') {
                 $result[] = 'UNIQUE';
             } elseif ($attr === '@default(uuid())') {
-                $result[] = 'DEFAULT uuid_generate_v4()';
+                $result[] = 'DEFAULT (UUID())';
             } elseif ($attr === '@default(now())') {
                 $result[] = 'DEFAULT CURRENT_TIMESTAMP';
+            } elseif (str_starts_with($attr, '@default(')) {
+                $value = substr($attr, 9, -1);
+                $result[] = "DEFAULT $value";
             }
         }
 
@@ -127,7 +130,7 @@ PHP;
     protected function mapFieldType(string $type): string
     {
         return match ($type) {
-            'uuid' => 'uuid',
+            'uuid' => 'char(36)',
             'string' => 'varchar(255)',
             'datetime' => 'timestamp',
             default => $type
