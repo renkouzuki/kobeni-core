@@ -78,12 +78,15 @@ PHP;
     protected function generateRelationshipStatement(array $relation): string
     {
         if ($relation['type'] === 'relation') {
+            $foreignKey = implode('", "', (array)$relation['foreign_key']);
+            $references = implode('", "', (array)$relation['references']);
+
             return sprintf(
                 '$this->addForeignKey("%s", "%s", ["%s"], ["%s"]);',
                 $relation['model'],
                 $relation['name'],
-                implode('", "', $relation['foreign_key']),
-                implode('", "', $relation['references'])
+                $foreignKey,
+                $references
             );
         }
         return '';
