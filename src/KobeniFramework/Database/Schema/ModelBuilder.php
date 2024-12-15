@@ -14,7 +14,7 @@ class ModelBuilder
     
     public function __construct(protected string $name)
     {
-        $this->definition['name'] = $name;
+        $this->definition['name'] = strtolower($name);
     }
     
     public function id(string $name = 'id'): self
@@ -38,19 +38,31 @@ class ModelBuilder
         return $this;
     }
     
-    public function unique(): self
+    public function unique(): self  // Changed to remove parameter requirement
     {
-        if ($this->lastField) {
-            $this->definition['fields'][$this->lastField]['attributes'][] = '@unique';
+        if (!$this->lastField) {
+            throw new \RuntimeException('No field defined before calling unique()');
         }
+        
+        if (!isset($this->definition['fields'][$this->lastField])) {
+            throw new \RuntimeException("Field {$this->lastField} not found");
+        }
+        
+        if (!isset($this->definition['fields'][$this->lastField]['attributes'])) {
+            $this->definition['fields'][$this->lastField]['attributes'] = [];
+        }
+        
+        $this->definition['fields'][$this->lastField]['attributes'][] = '@unique';
         return $this;
     }
 
     public function default(string $value): self
     {
-        if ($this->lastField) {
-            $this->definition['fields'][$this->lastField]['attributes'][] = "@default($value)";
+        if (!$this->lastField) {
+            throw new \RuntimeException('No field defined before calling default()');
         }
+        
+        $this->definition['fields'][$this->lastField]['attributes'][] = "@default($value)";
         return $this;
     }
     
@@ -63,6 +75,7 @@ class ModelBuilder
             'foreign_key' => $options['fields'] ?? null,
             'references' => $options['references'] ?? null
         ];
+        $this->lastField = null; // Reset lastField after relation
         return $this;
     }
     
