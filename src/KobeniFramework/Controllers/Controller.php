@@ -17,6 +17,20 @@ abstract class Controller
         }
     }
 
+    protected function getRequestData()
+    {
+        if ($_SERVER['CONTENT_TYPE'] === 'application/json') {
+            return json_decode(file_get_contents('php://input'), true);
+        }
+        return $_POST;
+    }
+
+    protected function redirect($path)
+    {
+        header("Location: $path");
+        exit;
+    }
+
     protected function needsDatabase()
     {
         return true;

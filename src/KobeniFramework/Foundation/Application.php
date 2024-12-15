@@ -21,7 +21,6 @@ class Application
 
     protected function loadConfigurations()
     {
-        // Load all configuration files from the config directory
         $configPath = $this->basePath . '/config';
         if (is_dir($configPath)) {
             foreach (glob($configPath . '/*.php') as $configFile) {

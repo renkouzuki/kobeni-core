@@ -20,8 +20,7 @@ class SchemaParser
             $columns = [];
             $constraints = [];
 
-            // Regular fields
-            foreach ($model['fields'] as $fieldName => $field) {
+            foreach ($model['fields'] as $fieldName => $field) { //// is there anyway i can do this better for example recursive this loop to check each thing instead?
                 if ($fieldName === 'id') {
                     $columns[] = sprintf(
                         '`%s` %s NOT NULL DEFAULT UUID() PRIMARY KEY',
@@ -29,7 +28,6 @@ class SchemaParser
                         $field['type']
                     );
                 } else {
-                    // Other fields
                     $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
                     $attributes = $this->generateAttributes($field['attributes'] ?? [], $fieldName);
                     $columns[] = sprintf(
@@ -41,7 +39,6 @@ class SchemaParser
                     );
                 }
 
-                // Handle unique constraint
                 if (isset($field['attributes']) && in_array('@unique', $field['attributes'])) {
                     $constraints[] = sprintf(
                         'UNIQUE KEY `%s_unique` (`%s`)',
@@ -115,14 +112,12 @@ PHP;
         $sorted = [];
         $relationships = $schema->getRelationships();
 
-        // First add models without relationships
         foreach ($models as $name => $model) {
             if (!$this->hasRelationships($name, $relationships)) {
                 $sorted[$name] = $model;
             }
         }
 
-        // Then add models with relationships
         foreach ($models as $name => $model) {
             if ($this->hasRelationships($name, $relationships)) {
                 $sorted[$name] = $model;
@@ -209,15 +204,15 @@ PHP;
 
         foreach ($attributes as $attr) {
             if ($attr === '@unique') {
-                continue;  // Skip unique here, it's handled as a separate constraint
+                continue;  // skip unique hereit handled as a separate constraint
             } elseif ($attr === '@default(UUID())') {
-                $result[] = 'DEFAULT UUID()'; // Ensure UUID() is used as a function
+                $result[] = 'DEFAULT UUID()'; // ensure uuid() is used as a function idk about this yet it should be function or not
             } elseif ($attr === '@default(CURRENT_TIMESTAMP)') {
                 $result[] = 'DEFAULT CURRENT_TIMESTAMP';
             } elseif ($attr === '@on_update(CURRENT_TIMESTAMP)') {
                 $result[] = 'ON UPDATE CURRENT_TIMESTAMP';
             } elseif (str_starts_with($attr, '@default(')) {
-                $value = substr($attr, 9, -1); // Extract value for other defaults
+                $value = substr($attr, 9, -1); // extract value for other defaults
                 $result[] = "DEFAULT $value";
             }
         }

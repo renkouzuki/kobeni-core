@@ -39,8 +39,7 @@ class Relation
 
     protected function generateHasOne(): string
     {
-        // Similar to belongsTo but reverse the foreign key and references
-        $fk = implode('", "', $this->references);
+        $fk = implode('", "', $this->references); /// generate reverse foreign key and references instead it similar to belongTo maybe it should be using one service instead
         $refs = implode('", "', $this->foreignKey);
 
         return sprintf(
@@ -53,14 +52,11 @@ class Relation
 
     protected function generateHasMany(): string
     {
-        // Similar to hasOne for SQL purposes
-        return $this->generateHasOne();
+        return $this->generateHasOne(); // i fix this one just recyle the top method instead 
     }
 
     protected function generateManyToMany(): string
     {
-        // For many-to-many, we'll need to create a pivot table
-        // This will be handled separately in the migration generator
-        return '';
+        return ''; /// this one should be handle seperately in the migration generator
     }
 }

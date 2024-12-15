@@ -53,9 +53,9 @@ class DB
     protected static function loadConfig(): array
     {
         $possiblePaths = [
-            getcwd() . '/config/Database.php',           // Project root
-            dirname(getcwd()) . '/config/Database.php',  // One level up
-            __DIR__ . '/../../../../config/Database.php' // From vendor dir
+            getcwd() . '/config/Database.php',           // main project root this for some reasom sometime work sometime not
+            dirname(getcwd()) . '/config/Database.php',  // 1 level up
+            __DIR__ . '/../../../../config/Database.php' // from vendor dir
         ];
 
         // Debug info

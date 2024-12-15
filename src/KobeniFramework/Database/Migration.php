@@ -31,8 +31,7 @@ abstract class Migration
             }
         }
 
-        // Combine all fields and constraints
-        $allDefinitions = array_merge($regularFields, $constraints);
+        $allDefinitions = array_merge($regularFields, $constraints); /// this just merge all the regularFileds array + con $definitions
         $fieldsStr = implode(",\n", $allDefinitions);
 
         $sql = "CREATE TABLE IF NOT EXISTS `$table` (\n$fieldsStr\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
