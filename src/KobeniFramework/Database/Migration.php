@@ -34,25 +34,17 @@ abstract class Migration
     protected function addForeignKey(
         string $table,
         string $foreignKey,
-        array $fields,
-        array $references
+        string $referenceTable,
+        string $referenceColumn
     ): void {
-        $fields = implode('`, `', $fields);
-        $references = implode('`, `', $references);
         $constraintName = "fk_{$table}_{$foreignKey}";
-
         $sql = "ALTER TABLE `$table` 
                 ADD CONSTRAINT `$constraintName`
-                FOREIGN KEY (`$fields`) 
-                REFERENCES `$foreignKey`(`$references`)
+                FOREIGN KEY (`$foreignKey`) 
+                REFERENCES `$referenceTable`(`$referenceColumn`)
                 ON DELETE CASCADE
                 ON UPDATE CASCADE;";
 
         $this->db->query($sql);
-    }
-
-    protected function dropForeignKey(string $table, string $constraintName): void
-    {
-        $this->db->query("ALTER TABLE `$table` DROP FOREIGN KEY `$constraintName`;");
     }
 }
