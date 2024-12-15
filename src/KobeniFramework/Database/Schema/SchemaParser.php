@@ -22,46 +22,65 @@ class SchemaParser
 
             // Regular fields
             foreach ($model['fields'] as $fieldName => $field) {
-                // Basic field definition
-                $type = $field['type'];
-                $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
-                $attributes = $this->generateAttributes($field['attributes'] ?? [], $fieldName);
-
-                $columnDef = "$type $nullable$attributes";
-                $columns[] = sprintf('"%s" => "%s"', $fieldName, $columnDef);
+                if ($fieldName === 'id') {
+                    $columns[] = sprintf(
+                        '`%s` %s NOT NULL DEFAULT UUID() PRIMARY KEY',
+                        $fieldName,
+                        $field['type']
+                    );
+                } else {
+                    // Other fields
+                    $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
+                    $attributes = $this->generateAttributes($field['attributes'] ?? [], $fieldName);
+                    $columns[] = sprintf(
+                        '`%s` %s %s%s',
+                        $fieldName,
+                        $field['type'],
+                        $nullable,
+                        $attributes
+                    );
+                }
 
                 // Handle unique constraint
                 if (isset($field['attributes']) && in_array('@unique', $field['attributes'])) {
-                    $constraints[] = sprintf('UNIQUE KEY `%s_unique` (`%s`)', $fieldName, $fieldName);
+                    $constraints[] = sprintf(
+                        'UNIQUE KEY `%s_unique` (`%s`)',
+                        $fieldName,
+                        $fieldName
+                    );
                 }
             }
 
             // Add foreign key constraints
             foreach ($schema->getRelationships() as $relation) {
                 if (strtolower($relation['model']) === strtolower($modelName)) {
+                    $fk = $relation['foreign_key'][0];
+                    $constraints[] = sprintf(
+                        'KEY `%s_index` (`%s`)',
+                        $fk,
+                        $fk
+                    );
                     $constraints[] = $this->generateConstraint($relation);
                 }
             }
 
-            // Combine columns and add constraints at the end
-            $tableDef = [];
-            foreach ($columns as $column) {
-                $tableDef[] = "            " . $column;
-            }
-            if (!empty($constraints)) {
-                foreach ($constraints as $constraint) {
-                    $tableDef[] = sprintf('            "%s"', $constraint);
-                }
-            }
+            // Combine into CREATE TABLE
+            $allFields = array_merge($columns, $constraints);
+            $fieldsStr = implode(",\n    ", $allFields);
 
-            $tables[] = sprintf(
-                '$this->createTable("%s", [%s%s%s]);',
+            $sql = sprintf(
+                'CREATE TABLE IF NOT EXISTS `%s` (
+    %s
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;',
                 $model['name'],
-                "\n",
-                implode(",\n", $tableDef),
-                "\n        "
+                $fieldsStr
             );
+
+            $tables[] = sprintf('$this->db->query("%s");', addslashes($sql));
         }
+
+        $tablesStr = $this->indentCode(implode("\n\n        ", $tables));
+        $downMethod = $this->generateDownMethod($schema);
 
         return <<<PHP
 <?php
@@ -72,17 +91,23 @@ class {$className} extends Migration
 {
     public function up(): void
     {
-        {$this->indentCode(implode("\n\n        ",$tables))}
+        \$this->db->query("SET FOREIGN_KEY_CHECKS=0;");
+        \$this->db->query("DROP TABLE IF EXISTS `user`;");
+        \$this->db->query("DROP TABLE IF EXISTS `role`;");
+        \$this->db->query("SET FOREIGN_KEY_CHECKS=1;");
+
+        {$tablesStr}
     }
     
     public function down(): void
     {
-        {$this->generateDownMethod($schema)}
+        \$this->db->query("SET FOREIGN_KEY_CHECKS=0;");
+        {$downMethod}
+        \$this->db->query("SET FOREIGN_KEY_CHECKS=1;");
     }
 }
 PHP;
     }
-
 
     protected function sortModelsByDependency(Schema $schema): array
     {
@@ -156,16 +181,13 @@ PHP;
 
     protected function generateConstraint(array $relation): string
     {
-        $foreignKeyField = $relation['foreign_key'][0];
-        $referencesField = $relation['references'][0];
-
         return sprintf(
             'CONSTRAINT `fk_%s_%s` FOREIGN KEY (`%s`) REFERENCES `%s`(`%s`) ON DELETE CASCADE ON UPDATE CASCADE',
-            $relation['model'],
-            $foreignKeyField,
-            $foreignKeyField,
-            $relation['name'],
-            $referencesField
+            strtolower($relation['model']),
+            $relation['foreign_key'][0],
+            $relation['foreign_key'][0],
+            strtolower($relation['name']),
+            $relation['references'][0]
         );
     }
 
