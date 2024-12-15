@@ -8,7 +8,6 @@ class SchemaParser
     {
         $timestamp = date('Y_m_d_His');
         $className = 'Migration_' . $timestamp;
-
         return $this->generateMigrationClass($className, $schema);
     }
 
@@ -23,7 +22,11 @@ class {$className} extends Migration
 {
     public function up(): void
     {
-        {$this->generateUpMethod($schema)}
+        // Create tables first
+        {$this->generateTableCreations($schema)}
+
+        // Then add foreign key constraints
+        {$this->generateRelationships($schema)}
     }
     
     public function down(): void
@@ -137,5 +140,31 @@ PHP;
             'datetime' => 'timestamp',
             default => $type
         };
+    }
+
+    protected function generateTableCreations(Schema $schema): string
+    {
+        $code = [];
+        foreach ($schema->getModels() as $model) {
+            $code[] = $this->generateCreateTableStatement($model);
+        }
+        return implode("\n\n        ", $code);
+    }
+
+    protected function generateRelationships(Schema $schema): string
+    {
+        $code = [];
+        foreach ($schema->getRelationships() as $relation) {
+            if ($relation['type'] === 'relation') {
+                $code[] = sprintf(
+                    '$this->addForeignKey("%s", "%s", "%s", "%s");',
+                    strtolower($relation['model']),      // table
+                    $relation['foreign_key'][0],         // foreign key column
+                    strtolower($relation['name']),       // referenced table
+                    $relation['references'][0]           // referenced column
+                );
+            }
+        }
+        return implode("\n        ", $code);
     }
 }
