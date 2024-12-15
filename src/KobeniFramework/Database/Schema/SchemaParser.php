@@ -16,21 +16,39 @@ class SchemaParser
         $tables = [];
         $models = $this->sortModelsByDependency($schema);
 
-        // Generate table creation code for each model
         foreach ($models as $modelName => $model) {
             $fields = [];
+            $constraints = [];
+            $indexes = [];
+
+            // Regular fields
             foreach ($model['fields'] as $fieldName => $field) {
+                if (isset($field['attributes']) && in_array('@unique', $field['attributes'])) {
+                    $indexes[] = "UNIQUE KEY `{$fieldName}_unique` (`{$fieldName}`)";
+                }
+                if (isset($field['attributes']) && in_array('@index', $field['attributes'])) {
+                    $indexes[] = "KEY `{$fieldName}_index` (`{$fieldName}`)";
+                }
                 $fields[] = $this->generateFieldDefinition($fieldName, $field);
             }
-            
-            // Add foreign key constraints
+
+            // Foreign keys
             foreach ($schema->getRelationships() as $relation) {
                 if (strtolower($relation['model']) === strtolower($modelName)) {
-                    $fields[] = $this->generateConstraint($relation);
+                    $fkColumn = $relation['foreign_key'][0];
+                    $indexes[] = "KEY `{$fkColumn}_index` (`{$fkColumn}`)";
+                    $constraints[] = $this->generateConstraint($relation);
                 }
             }
 
-            $tableFields = implode(",\n            ", $fields);
+            // Combine all fields, indexes, and constraints
+            $allDefinitions = array_merge(
+                $fields,
+                $indexes,
+                $constraints
+            );
+
+            $tableFields = implode(",\n            ", $allDefinitions);
             $tables[] = <<<CODE
             \$this->createTable("{$model['name']}", [
             {$tableFields}
@@ -38,8 +56,7 @@ class SchemaParser
 CODE;
         }
 
-        // Generate the complete migration class
-        $template = <<<PHP
+        return <<<PHP
 <?php
 
 use KobeniFramework\Database\Migration;
@@ -48,7 +65,7 @@ class {$className} extends Migration
 {
     public function up(): void
     {
-        {$this->indentCode(implode("\n\n        ", $tables))}
+        {$this->indentCode(implode("\n\n        ",$tables))}
     }
     
     public function down(): void
@@ -57,7 +74,6 @@ class {$className} extends Migration
     }
 }
 PHP;
-        return $template;
     }
 
     protected function sortModelsByDependency(Schema $schema): array
@@ -99,6 +115,10 @@ PHP;
         $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
         $attributes = $this->generateAttributes($field['attributes'] ?? []);
 
+        if (isset($field['attributes']) && in_array('@id', $field['attributes'])) {
+            $type .= ' PRIMARY KEY';
+        }
+
         return sprintf(
             '"%s" => "%s %s%s"',
             $name,
@@ -107,6 +127,7 @@ PHP;
             $attributes
         );
     }
+
 
     protected function generateConstraint(array $relation): string
     {
@@ -124,17 +145,17 @@ PHP;
     {
         $drops = [];
         $models = array_reverse($schema->getModels());
-        
+
         foreach ($models as $modelName => $model) {
             $drops[] = "\$this->dropTable(\"{$model['name']}\");";
         }
-        
+
         return implode("\n        ", $drops);
     }
 
     protected function mapFieldType(string $type): string
     {
-        return match($type) {
+        return match ($type) {
             'char(36)' => 'char(36)',
             'string' => 'varchar(255)',
             'text' => 'text',
@@ -155,7 +176,7 @@ PHP;
     protected function generateAttributes(array $attributes): string
     {
         $result = [];
-        
+
         foreach ($attributes as $attr) {
             if ($attr === '@unique') {
                 $result[] = 'UNIQUE';
