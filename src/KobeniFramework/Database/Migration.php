@@ -23,7 +23,13 @@ abstract class Migration
         ));
 
         $sql = "CREATE TABLE IF NOT EXISTS `$table` (\n$fieldsStr\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
-        $this->db->query($sql);
+
+        try {
+            $this->db->query($sql);
+        } catch (\Exception $e) {
+            echo "Failed to create table with SQL:\n$sql\n";
+            throw $e;
+        }
     }
 
     protected function dropTable(string $table): void
@@ -45,6 +51,11 @@ abstract class Migration
                 ON DELETE CASCADE
                 ON UPDATE CASCADE;";
 
-        $this->db->query($sql);
+        try {
+            $this->db->query($sql);
+        } catch (\Exception $e) {
+            echo "Failed to add foreign key with SQL:\n$sql\n";
+            throw $e;
+        }
     }
 }

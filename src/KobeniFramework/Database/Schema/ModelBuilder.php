@@ -34,8 +34,7 @@ class ModelBuilder
     public function datetime(string $name, bool $nullable = false): self
     {
         $attrs = [];
-        // For updateAt fields, use CURRENT_TIMESTAMP ON UPDATE
-        if ($name === 'updatedAt' || $name === 'updated_at') {
+        if ($name === 'updated_at') {
             $attrs[] = '@default(CURRENT_TIMESTAMP)';
             $attrs[] = '@on_update(CURRENT_TIMESTAMP)';
         }
@@ -68,11 +67,17 @@ class ModelBuilder
         $this->relationships[] = [
             'type' => 'relation',
             'name' => $name,
-            'model' => $relatedModel,
+            'model' => $this->definition['name'],
             'foreign_key' => $options['fields'] ?? null,
             'references' => $options['references'] ?? null
         ];
-        $this->lastField = null; // Reset lastField after relation
+        return $this;
+    }
+
+    public function foreignId(string $name): self
+    {
+        $this->field($name, 'char(36)', []);
+        $this->lastField = $name;
         return $this;
     }
 
