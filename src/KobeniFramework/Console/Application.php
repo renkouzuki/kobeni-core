@@ -21,6 +21,8 @@ class Application
         $this->add(new Commands\MakeCommandCommand());
         $this->add(new Commands\StartCommand());
         $this->add(new Commands\MakeMigrationCommand());
+        $this->add(new Commands\MigrateRollbackCommand());
+        $this->add(new Commands\MigrateCommand());
     }
 
     public function add(Command $command)
