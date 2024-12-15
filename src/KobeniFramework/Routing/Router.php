@@ -135,14 +135,14 @@ class Router
     protected function runMiddleware($route, $callback)
     {
         if (is_array($route->getAction()) && isset($route->getAction()['middleware'])) {
-            var_dump('Checking middleware'); 
-            var_dump($route->getAction());   
+            // var_dump('Checking middleware'); 
+            // var_dump($route->getAction());   
             
             $middlewares = (array) $route->getAction()['middleware'];
             
             foreach ($middlewares as $middleware) {
                 $middlewareClass = "App\\Middleware\\{$middleware}Middleware"; /// this is suffix middleware i keep forgot about this
-                var_dump($middlewareClass);  
+                // var_dump($middlewareClass);  
                 
                 if (!class_exists($middlewareClass)) {
                     throw new \RuntimeException("Middleware {$middleware} not found: {$middlewareClass}");
