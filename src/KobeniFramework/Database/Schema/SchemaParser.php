@@ -156,13 +156,16 @@ PHP;
 
     protected function generateConstraint(array $relation): string
     {
+        $foreignKeyField = $relation['foreign_key'][0];
+        $referencesField = $relation['references'][0];
+
         return sprintf(
             'CONSTRAINT `fk_%s_%s` FOREIGN KEY (`%s`) REFERENCES `%s`(`%s`) ON DELETE CASCADE ON UPDATE CASCADE',
             $relation['model'],
-            $relation['foreign_key'][0],
-            $relation['foreign_key'][0],
+            $foreignKeyField,
+            $foreignKeyField,
             $relation['name'],
-            $relation['references'][0]
+            $referencesField
         );
     }
 
@@ -184,16 +187,15 @@ PHP;
 
         foreach ($attributes as $attr) {
             if ($attr === '@unique') {
-                // Skip unique here, it's handled as a separate constraint
-                continue;
+                continue;  // Skip unique here, it's handled as a separate constraint
             } elseif ($attr === '@default(UUID())') {
-                $result[] = 'DEFAULT (UUID())';
+                $result[] = 'DEFAULT UUID()'; // Ensure UUID() is used as a function
             } elseif ($attr === '@default(CURRENT_TIMESTAMP)') {
                 $result[] = 'DEFAULT CURRENT_TIMESTAMP';
             } elseif ($attr === '@on_update(CURRENT_TIMESTAMP)') {
                 $result[] = 'ON UPDATE CURRENT_TIMESTAMP';
             } elseif (str_starts_with($attr, '@default(')) {
-                $value = substr($attr, 9, -1);
+                $value = substr($attr, 9, -1); // Extract value for other defaults
                 $result[] = "DEFAULT $value";
             }
         }

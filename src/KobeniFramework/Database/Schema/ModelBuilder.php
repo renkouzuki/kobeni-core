@@ -19,7 +19,7 @@ class ModelBuilder
 
     public function id(string $name = 'id'): self
     {
-        $this->field($name, 'char(36)', ['@id', '@default(UUID())']);
+        $this->field($name, 'char(36)', ['@default(UUID())']);
         $this->lastField = $name;
         return $this;
     }
