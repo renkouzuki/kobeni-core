@@ -10,6 +10,10 @@ class Application
     public function __construct()
     {
         $this->registerDefaultCommands();
+        echo "Registered commands:\n";
+        foreach ($this->commands as $name => $command) {
+            echo "- $name\n";
+        }
     }
 
     protected function registerDefaultCommands()
