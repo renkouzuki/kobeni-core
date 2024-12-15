@@ -96,10 +96,10 @@ PHP;
     {
         $attributes = $this->generateAttributes($field['attributes'] ?? []);
         $type = $this->mapFieldType($field['type']);
-        $nullable = $field['nullable'] ? '' : ' NOT NULL';
+        $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
 
         return sprintf(
-            '"%s" => "%s%s%s"',
+            '"%s" => "%s %s%s"',
             $name,
             $type,
             $nullable,
@@ -114,10 +114,12 @@ PHP;
         foreach ($attributes as $attr) {
             if ($attr === '@unique') {
                 $result[] = 'UNIQUE';
-            } elseif ($attr === '@default(uuid())') {
+            } elseif ($attr === '@default(UUID())') {
                 $result[] = 'DEFAULT (UUID())';
-            } elseif ($attr === '@default(now())') {
+            } elseif ($attr === '@default(CURRENT_TIMESTAMP)') {
                 $result[] = 'DEFAULT CURRENT_TIMESTAMP';
+            } elseif ($attr === '@on_update(CURRENT_TIMESTAMP)') {
+                $result[] = 'ON UPDATE CURRENT_TIMESTAMP';
             } elseif (str_starts_with($attr, '@default(')) {
                 $value = substr($attr, 9, -1);
                 $result[] = "DEFAULT $value";

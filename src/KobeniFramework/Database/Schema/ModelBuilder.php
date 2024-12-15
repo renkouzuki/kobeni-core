@@ -8,64 +8,61 @@ class ModelBuilder
         'fields' => [],
         'attributes' => []
     ];
-    
+
     protected array $relationships = [];
     protected ?string $lastField = null;
-    
+
     public function __construct(protected string $name)
     {
         $this->definition['name'] = strtolower($name);
     }
-    
+
     public function id(string $name = 'id'): self
     {
         $this->field($name, 'char(36)', ['@id', '@default(UUID())']);
         $this->lastField = $name;
         return $this;
     }
-    
+
     public function string(string $name, bool $nullable = false): self
     {
         $this->field($name, 'string', [], $nullable);
         $this->lastField = $name;
         return $this;
     }
-    
+
     public function datetime(string $name, bool $nullable = false): self
     {
-        $this->field($name, 'datetime', [], $nullable);
+        $attrs = [];
+        // For updateAt fields, use CURRENT_TIMESTAMP ON UPDATE
+        if ($name === 'updatedAt' || $name === 'updated_at') {
+            $attrs[] = '@default(CURRENT_TIMESTAMP)';
+            $attrs[] = '@on_update(CURRENT_TIMESTAMP)';
+        }
+        $this->field($name, 'datetime', $attrs, $nullable);
         $this->lastField = $name;
         return $this;
     }
-    
-    public function unique(): self  // Changed to remove parameter requirement
+
+    public function unique(): self
     {
-        if (!$this->lastField) {
-            throw new \RuntimeException('No field defined before calling unique()');
+        if ($this->lastField) {
+            $this->definition['fields'][$this->lastField]['attributes'][] = '@unique';
         }
-        
-        if (!isset($this->definition['fields'][$this->lastField])) {
-            throw new \RuntimeException("Field {$this->lastField} not found");
-        }
-        
-        if (!isset($this->definition['fields'][$this->lastField]['attributes'])) {
-            $this->definition['fields'][$this->lastField]['attributes'] = [];
-        }
-        
-        $this->definition['fields'][$this->lastField]['attributes'][] = '@unique';
         return $this;
     }
 
     public function default(string $value): self
     {
-        if (!$this->lastField) {
-            throw new \RuntimeException('No field defined before calling default()');
+        if ($this->lastField) {
+            if ($value === 'now()') {
+                $value = 'CURRENT_TIMESTAMP';
+            }
+            $this->definition['fields'][$this->lastField]['attributes'][] = "@default($value)";
         }
-        
-        $this->definition['fields'][$this->lastField]['attributes'][] = "@default($value)";
         return $this;
     }
-    
+
     public function relation(string $name, string $relatedModel, array $options = []): self
     {
         $this->relationships[] = [
@@ -78,7 +75,7 @@ class ModelBuilder
         $this->lastField = null; // Reset lastField after relation
         return $this;
     }
-    
+
     protected function field(string $name, string $type, array $attributes = [], bool $nullable = false): void
     {
         $this->definition['fields'][$name] = [
@@ -87,12 +84,12 @@ class ModelBuilder
             'attributes' => $attributes
         ];
     }
-    
+
     public function getDefinition(): array
     {
         return $this->definition;
     }
-    
+
     public function getRelationships(): array
     {
         return $this->relationships;
