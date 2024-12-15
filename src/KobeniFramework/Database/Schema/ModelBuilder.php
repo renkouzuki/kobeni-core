@@ -120,4 +120,12 @@ class ModelBuilder
     {
         return $this->relationships;
     }
+
+    public function index(): self
+    {
+        if ($this->lastField) {
+            $this->definition['fields'][$this->lastField]['attributes'][] = '@index';
+        }
+        return $this;
+    }
 }
