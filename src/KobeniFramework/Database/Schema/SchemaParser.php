@@ -23,7 +23,7 @@ class SchemaParser
             // Regular fields
             foreach ($model['fields'] as $fieldName => $field) {
                 // Basic field definition
-                $type = $this->mapFieldType($field['type']);
+                $type = $field['type'];
                 $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
                 $attributes = $this->generateAttributes($field['attributes'] ?? [], $fieldName);
 
@@ -119,7 +119,7 @@ PHP;
 
     protected function generateFieldDefinition(string $name, array $field): string
     {
-        $type = $this->mapFieldType($field['type']);
+        $type = $field['type'];
         $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
         $attributes = $this->generateAttributes($field['attributes'] ?? [], $name);
 
@@ -176,26 +176,6 @@ PHP;
         }
 
         return implode("\n        ", $drops);
-    }
-
-    protected function mapFieldType(string $type): string
-    {
-        return match ($type) {
-            'char(36)' => 'char(36)',
-            'string' => 'varchar(255)',
-            'text' => 'text',
-            'integer' => 'int',
-            'bigInteger' => 'bigint',
-            'float' => 'float',
-            'double' => 'double',
-            'decimal' => 'decimal(10,2)',
-            'boolean' => 'tinyint(1)',
-            'datetime' => 'timestamp',
-            'date' => 'date',
-            'time' => 'time',
-            'json' => 'json',
-            default => $type
-        };
     }
 
     protected function generateAttributes(array $attributes, string $fieldName): string

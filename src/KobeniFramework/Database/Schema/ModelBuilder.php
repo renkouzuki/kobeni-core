@@ -8,22 +8,22 @@ class ModelBuilder
         'fields' => [],
         'attributes' => []
     ];
-    
+
     protected array $relationships = [];
     protected ?string $lastField = null;
-    
+
     public function __construct(protected string $name)
     {
         $this->definition['name'] = strtolower($name);
     }
-    
+
     public function id(string $name = 'id'): self
     {
         $this->field($name, 'char(36)', ['@id', '@default(UUID())']);
         $this->lastField = $name;
         return $this;
     }
-    
+
     public function string(string $name, bool $nullable = false): self
     {
         $this->field($name, 'string', [], $nullable);
@@ -58,7 +58,7 @@ class ModelBuilder
         $this->lastField = $name;
         return $this;
     }
-    
+
     public function datetime(string $name, bool $nullable = false): self
     {
         $attrs = [];
@@ -70,7 +70,7 @@ class ModelBuilder
         $this->lastField = $name;
         return $this;
     }
-    
+
     public function unique(): self
     {
         if ($this->lastField) {
@@ -89,7 +89,7 @@ class ModelBuilder
         }
         return $this;
     }
-    
+
     public function relation(string $name, string $relatedModel, array $options = []): self
     {
         $this->relationships[] = [
@@ -101,21 +101,21 @@ class ModelBuilder
         ];
         return $this;
     }
-    
+
     protected function field(string $name, string $type, array $attributes = [], bool $nullable = false): void
     {
         $this->definition['fields'][$name] = [
-            'type' => $type,
+            'type' => Types::map($type),
             'nullable' => $nullable,
             'attributes' => $attributes
         ];
     }
-    
+
     public function getDefinition(): array
     {
         return $this->definition;
     }
-    
+
     public function getRelationships(): array
     {
         return $this->relationships;
