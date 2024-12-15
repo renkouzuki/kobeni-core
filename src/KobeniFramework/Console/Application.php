@@ -18,31 +18,56 @@ class Application
 
     protected function registerDefaultCommands()
     {
-        $this->add(new Commands\StartCommand());
-        $this->add(new Commands\MakeCommandCommand());
+        // Add debug
+        echo "Registering commands...\n";
+
+        try {
+            $makeCommand = new Commands\MakeCommandCommand();
+            echo "MakeCommand signature: " . $makeCommand->getSignature() . "\n";
+            $this->add($makeCommand);
+        } catch (\Exception $e) {
+            echo "Error adding make:command: " . $e->getMessage() . "\n";
+        }
+
+        try {
+            $startCommand = new Commands\StartCommand();
+            echo "StartCommand signature: " . $startCommand->getSignature() . "\n";
+            $this->add($startCommand);
+        } catch (\Exception $e) {
+            echo "Error adding start: " . $e->getMessage() . "\n";
+        }
+
+        // Debug registered commands
+        echo "Commands in array:\n";
+        var_dump(array_keys($this->commands));
     }
 
     public function add(Command $command)
     {
-        $this->commands[$command->getSignature()] = $command;
+        $signature = $command->getSignature();
+        $commandName = explode(' ', $signature)[0];
+        $this->commands[$commandName] = $command;
     }
 
     public function run(array $argv)
     {
-        $command = $argv[1] ?? $this->defaultCommand;
+        $commandName = $argv[1] ?? $this->defaultCommand;
 
-        if ($command === '--help' || $command === '-h') {
+        echo "Looking for command: $commandName\n";
+        echo "Available commands: " . implode(', ', array_keys($this->commands)) . "\n";
+
+        if ($commandName === '--help' || $commandName === '-h') {
             $this->showHelp();
             return;
         }
 
-        if (!isset($this->commands[$command])) {
-            $this->showError($command);
+        if (!isset($this->commands[$commandName])) {
+            $this->showError($commandName);
             return;
         }
 
         try {
-            $this->commands[$command]->handle();
+            $this->commands[$commandName]->handle();
         } catch (\Exception $e) {
             echo "\033[31mError: {$e->getMessage()}\033[0m\n";
         }
