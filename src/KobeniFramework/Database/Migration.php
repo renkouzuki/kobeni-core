@@ -16,16 +16,24 @@ abstract class Migration
 
     protected function createTable(string $table, array $fields): void
     {
-        $fieldsStr = implode(",\n", array_map(
-            function ($name, $def) {
-                if (preg_match('/^(FOREIGN|PRIMARY|UNIQUE)\s+KEY/i', $name)) {
-                    return "    $def";
-                }
-                return "    `$name` $def";
-            },
-            array_keys($fields),
-            $fields
-        ));
+        $regularFields = [];
+        $constraints = [];
+
+        foreach ($fields as $name => $def) {
+            if (
+                str_starts_with($def, 'FOREIGN KEY') ||
+                str_starts_with($def, 'PRIMARY KEY') ||
+                str_starts_with($def, 'CONSTRAINT')
+            ) {
+                $constraints[] = "    $def";
+            } else {
+                $regularFields[] = "    `$name` $def";
+            }
+        }
+
+        // Combine all fields and constraints
+        $allDefinitions = array_merge($regularFields, $constraints);
+        $fieldsStr = implode(",\n", $allDefinitions);
 
         $sql = "CREATE TABLE IF NOT EXISTS `$table` (\n$fieldsStr\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
 

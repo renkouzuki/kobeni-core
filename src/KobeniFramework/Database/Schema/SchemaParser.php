@@ -38,7 +38,7 @@ class {$className} extends Migration
             "deleted_at" => "timestamp NULL",
             "created_at" => "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP",
             "updated_at" => "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
-            "FOREIGN KEY (role_id) REFERENCES role(id) ON DELETE CASCADE ON UPDATE CASCADE" // Added directly in table creation
+            "CONSTRAINT fk_user_role FOREIGN KEY (role_id) REFERENCES role(id) ON DELETE CASCADE ON UPDATE CASCADE"
         ]);
     }
     
@@ -53,32 +53,32 @@ PHP;
         return $template;
     }
 
-//     protected function generateMigrationClass(string $className, Schema $schema): string
-//     {
-//         $template = <<<PHP
-// <?php
+    //     protected function generateMigrationClass(string $className, Schema $schema): string
+    //     {
+    //         $template = <<<PHP
+    // <?php
 
-// use KobeniFramework\Database\Migration;
+    // use KobeniFramework\Database\Migration;
 
-// class {$className} extends Migration
-// {
-//     public function up(): void
-//     {
-//         // Create tables first
-//         {$this->generateTableCreations($schema)}
+    // class {$className} extends Migration
+    // {
+    //     public function up(): void
+    //     {
+    //         // Create tables first
+    //         {$this->generateTableCreations($schema)}
 
-//         // Then add foreign key constraints
-//         {$this->generateRelationships($schema)}
-//     }
-    
-//     public function down(): void
-//     {
-//         {$this->generateDownMethod($schema)}
-//     }
-// }
-// PHP;
-//         return $template;
-//     }
+    //         // Then add foreign key constraints
+    //         {$this->generateRelationships($schema)}
+    //     }
+
+    //     public function down(): void
+    //     {
+    //         {$this->generateDownMethod($schema)}
+    //     }
+    // }
+    // PHP;
+    //         return $template;
+    //     }
 
     protected function generateUpMethod(Schema $schema): string
     {
