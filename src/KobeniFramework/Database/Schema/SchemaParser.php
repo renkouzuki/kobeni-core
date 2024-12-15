@@ -17,33 +17,36 @@ class SchemaParser
         $models = $this->sortModelsByDependency($schema);
 
         foreach ($models as $modelName => $model) {
-            $fields = [];
+            $columns = [];
+            $constraints = [];
 
             // Regular fields
             foreach ($model['fields'] as $fieldName => $field) {
-                $fields[] = $this->generateFieldDefinition($fieldName, $field);
+                // Basic field definition
+                $type = $this->mapFieldType($field['type']);
+                $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
+                $attributes = $this->generateAttributes($field['attributes'] ?? [], $fieldName);
 
-                // Add indexes
-                if (isset($field['attributes'])) {
-                    if (in_array('@unique', $field['attributes'])) {
-                        $fields[] = $this->generateUniqueIndexDefinition($fieldName);
-                    }
-                    if (in_array('@index', $field['attributes'])) {
-                        $fields[] = $this->generateIndexDefinition($fieldName);
-                    }
+                $columnDef = "$type $nullable$attributes";
+                $columns[] = sprintf('"%s" => "%s"', $fieldName, $columnDef);
+
+                // Handle unique constraint
+                if (isset($field['attributes']) && in_array('@unique', $field['attributes'])) {
+                    $constraints[] = sprintf('"UNIQUE KEY `%s_unique` (`%s`)"', $fieldName, $fieldName);
                 }
             }
 
-            // Foreign keys
+            // Add foreign key constraints
             foreach ($schema->getRelationships() as $relation) {
                 if (strtolower($relation['model']) === strtolower($modelName)) {
-                    $fkColumn = $relation['foreign_key'][0];
-                    $fields[] = $this->generateIndexDefinition($fkColumn, 'fk');
-                    $fields[] = $this->generateConstraint($relation);
+                    $constraints[] = $this->generateConstraint($relation);
                 }
             }
 
-            $tableFields = implode(",\n            ", $fields);
+            // Combine columns and constraints
+            $allDefinitions = array_merge($columns, $constraints);
+            $tableFields = implode(",\n            ", $allDefinitions);
+
             $tables[] = <<<CODE
             \$this->createTable("{$model['name']}", [
             {$tableFields}
@@ -109,7 +112,7 @@ PHP;
     {
         $type = $this->mapFieldType($field['type']);
         $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
-        $attributes = $this->generateAttributes($field['attributes'] ?? []);
+        $attributes = $this->generateAttributes($field['attributes'] ?? [], $name);
 
         return sprintf(
             '"%s" => "%s %s%s"',
@@ -145,7 +148,7 @@ PHP;
     protected function generateConstraint(array $relation): string
     {
         return sprintf(
-            '"CONSTRAINT fk_%s_%s FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE ON UPDATE CASCADE"',
+            '"CONSTRAINT `fk_%s_%s` FOREIGN KEY (`%s`) REFERENCES `%s`(`%s`) ON DELETE CASCADE ON UPDATE CASCADE"',
             $relation['model'],
             $relation['foreign_key'][0],
             $relation['foreign_key'][0],
@@ -186,13 +189,14 @@ PHP;
         };
     }
 
-    protected function generateAttributes(array $attributes): string
+    protected function generateAttributes(array $attributes, string $fieldName): string
     {
         $result = [];
 
         foreach ($attributes as $attr) {
             if ($attr === '@unique') {
-                $result[] = 'UNIQUE';
+                // Skip unique here, it's handled as a separate constraint
+                continue;
             } elseif ($attr === '@default(UUID())') {
                 $result[] = 'DEFAULT (UUID())';
             } elseif ($attr === '@default(CURRENT_TIMESTAMP)') {
