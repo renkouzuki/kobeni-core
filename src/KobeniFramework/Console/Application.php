@@ -18,56 +18,50 @@ class Application
 
     protected function registerDefaultCommands()
     {
-        // Add debug
-        echo "Registering commands...\n";
-
-        try {
-            $makeCommand = new Commands\MakeCommandCommand();
-            echo "MakeCommand signature: " . $makeCommand->getSignature() . "\n";
-            $this->add($makeCommand);
-        } catch (\Exception $e) {
-            echo "Error adding make:command: " . $e->getMessage() . "\n";
-        }
-
-        try {
-            $startCommand = new Commands\StartCommand();
-            echo "StartCommand signature: " . $startCommand->getSignature() . "\n";
-            $this->add($startCommand);
-        } catch (\Exception $e) {
-            echo "Error adding start: " . $e->getMessage() . "\n";
-        }
-
-        // Debug registered commands
-        echo "Commands in array:\n";
-        var_dump(array_keys($this->commands));
+        $this->add(new Commands\MakeCommandCommand());
+        $this->add(new Commands\StartCommand());
     }
 
     public function add(Command $command)
     {
-        $signature = $command->getSignature();
-        $commandName = explode(' ', $signature)[0];
-        $this->commands[$commandName] = $command;
+        // Store with the full signature as the key
+        $this->commands[$command->getSignature()] = $command;
     }
 
     public function run(array $argv)
     {
         $commandName = $argv[1] ?? $this->defaultCommand;
 
-        echo "Looking for command: $commandName\n";
-        echo "Available commands: " . implode(', ', array_keys($this->commands)) . "\n";
+        // For debugging
+        echo "Trying to run command: $commandName\n";
 
         if ($commandName === '--help' || $commandName === '-h') {
             $this->showHelp();
             return;
         }
 
-        if (!isset($this->commands[$commandName])) {
+        // Find the matching command
+        $command = null;
+        foreach ($this->commands as $signature => $cmd) {
+            // Get base command name without arguments
+            $baseName = explode(' ', $signature)[0];
+            if ($baseName === $commandName) {
+                $command = $cmd;
+                break;
+            }
+        }
+
+        if (!$command) {
             $this->showError($commandName);
             return;
         }
 
         try {
-            $this->commands[$commandName]->handle();
+            // If there are arguments, pass them
+            if (isset($argv[2])) {
+                $command->setArgument('name', $argv[2]);
+            }
+            $command->handle();
         } catch (\Exception $e) {
             echo "\033[31mError: {$e->getMessage()}\033[0m\n";
         }
@@ -80,8 +74,9 @@ class Application
         echo "  php kobeni [command] [options]\n\n";
         echo "Available commands:\n";
 
-        foreach ($this->commands as $name => $command) {
-            echo sprintf("  \033[36m%-15s\033[0m %s\n", $name, $command->getDescription());
+        foreach ($this->commands as $signature => $command) {
+            $baseName = explode(' ', $signature)[0];
+            echo sprintf("  \033[36m%-15s\033[0m %s\n", $baseName, $command->getDescription());
         }
         echo "\n";
     }
