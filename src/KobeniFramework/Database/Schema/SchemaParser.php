@@ -18,37 +18,32 @@ class SchemaParser
 
         foreach ($models as $modelName => $model) {
             $fields = [];
-            $constraints = [];
-            $indexes = [];
 
             // Regular fields
             foreach ($model['fields'] as $fieldName => $field) {
-                if (isset($field['attributes']) && in_array('@unique', $field['attributes'])) {
-                    $indexes[] = "UNIQUE KEY `{$fieldName}_unique` (`{$fieldName}`)";
-                }
-                if (isset($field['attributes']) && in_array('@index', $field['attributes'])) {
-                    $indexes[] = "KEY `{$fieldName}_index` (`{$fieldName}`)";
-                }
                 $fields[] = $this->generateFieldDefinition($fieldName, $field);
+
+                // Add indexes
+                if (isset($field['attributes'])) {
+                    if (in_array('@unique', $field['attributes'])) {
+                        $fields[] = $this->generateUniqueIndexDefinition($fieldName);
+                    }
+                    if (in_array('@index', $field['attributes'])) {
+                        $fields[] = $this->generateIndexDefinition($fieldName);
+                    }
+                }
             }
 
             // Foreign keys
             foreach ($schema->getRelationships() as $relation) {
                 if (strtolower($relation['model']) === strtolower($modelName)) {
                     $fkColumn = $relation['foreign_key'][0];
-                    $indexes[] = "KEY `{$fkColumn}_index` (`{$fkColumn}`)";
-                    $constraints[] = $this->generateConstraint($relation);
+                    $fields[] = $this->generateIndexDefinition($fkColumn, 'fk');
+                    $fields[] = $this->generateConstraint($relation);
                 }
             }
 
-            // Combine all fields, indexes, and constraints
-            $allDefinitions = array_merge(
-                $fields,
-                $indexes,
-                $constraints
-            );
-
-            $tableFields = implode(",\n            ", $allDefinitions);
+            $tableFields = implode(",\n            ", $fields);
             $tables[] = <<<CODE
             \$this->createTable("{$model['name']}", [
             {$tableFields}
@@ -75,6 +70,7 @@ class {$className} extends Migration
 }
 PHP;
     }
+
 
     protected function sortModelsByDependency(Schema $schema): array
     {
@@ -115,16 +111,33 @@ PHP;
         $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
         $attributes = $this->generateAttributes($field['attributes'] ?? []);
 
-        if (isset($field['attributes']) && in_array('@id', $field['attributes'])) {
-            $type .= ' PRIMARY KEY';
-        }
-
         return sprintf(
             '"%s" => "%s %s%s"',
             $name,
             $type,
             $nullable,
             $attributes
+        );
+    }
+
+    protected function generateIndexDefinition(string $fieldName, string $type = 'index'): string
+    {
+        return sprintf(
+            '"INDEX_%s" => "KEY `%s_%s` (`%s`)"',
+            $fieldName,
+            $fieldName,
+            $type,
+            $fieldName
+        );
+    }
+
+    protected function generateUniqueIndexDefinition(string $fieldName): string
+    {
+        return sprintf(
+            '"UNIQUE_%s" => "UNIQUE KEY `%s_unique` (`%s`)"',
+            $fieldName,
+            $fieldName,
+            $fieldName
         );
     }
 
