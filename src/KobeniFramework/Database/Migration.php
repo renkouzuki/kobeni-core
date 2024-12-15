@@ -17,7 +17,12 @@ abstract class Migration
     protected function createTable(string $table, array $fields): void
     {
         $fieldsStr = implode(",\n", array_map(
-            fn($name, $def) => "    `$name` $def",
+            function ($name, $def) {
+                if (preg_match('/^(FOREIGN|PRIMARY|UNIQUE)\s+KEY/i', $name)) {
+                    return "    $def";
+                }
+                return "    `$name` $def";
+            },
             array_keys($fields),
             $fields
         ));

@@ -8,11 +8,7 @@ class SchemaParser
     {
         $timestamp = date('Y_m_d_His');
         $className = 'Migration_' . $timestamp;
-        return $this->generateMigrationClass($className, $schema);
-    }
 
-    protected function generateMigrationClass(string $className, Schema $schema): string
-    {
         $template = <<<PHP
 <?php
 
@@ -22,21 +18,67 @@ class {$className} extends Migration
 {
     public function up(): void
     {
-        // Create tables first
-        {$this->generateTableCreations($schema)}
+        // Create Role table first
+        \$this->createTable("role", [
+            "id" => "char(36) NOT NULL DEFAULT (UUID())",
+            "name" => "varchar(255) NOT NULL UNIQUE",
+            "description" => "varchar(255) NULL",
+            "created_at" => "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP",
+            "updated_at" => "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        ]);
 
-        // Then add foreign key constraints
-        {$this->generateRelationships($schema)}
+        // Create User table with foreign key constraint
+        \$this->createTable("user", [
+            "id" => "char(36) NOT NULL DEFAULT (UUID())",
+            "name" => "varchar(255) NOT NULL UNIQUE",
+            "email" => "varchar(255) NOT NULL UNIQUE",
+            "password" => "varchar(255) NOT NULL",
+            "profile" => "varchar(255) NULL",
+            "role_id" => "char(36) NOT NULL",
+            "deleted_at" => "timestamp NULL",
+            "created_at" => "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP",
+            "updated_at" => "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+            "FOREIGN KEY (role_id) REFERENCES role(id) ON DELETE CASCADE ON UPDATE CASCADE" // Added directly in table creation
+        ]);
     }
     
     public function down(): void
     {
-        {$this->generateDownMethod($schema)}
+        \$this->dropTable("user");
+        \$this->dropTable("role");
     }
 }
 PHP;
+
         return $template;
     }
+
+//     protected function generateMigrationClass(string $className, Schema $schema): string
+//     {
+//         $template = <<<PHP
+// <?php
+
+// use KobeniFramework\Database\Migration;
+
+// class {$className} extends Migration
+// {
+//     public function up(): void
+//     {
+//         // Create tables first
+//         {$this->generateTableCreations($schema)}
+
+//         // Then add foreign key constraints
+//         {$this->generateRelationships($schema)}
+//     }
+    
+//     public function down(): void
+//     {
+//         {$this->generateDownMethod($schema)}
+//     }
+// }
+// PHP;
+//         return $template;
+//     }
 
     protected function generateUpMethod(Schema $schema): string
     {
