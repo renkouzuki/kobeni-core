@@ -128,4 +128,69 @@ class ModelBuilder
         }
         return $this;
     }
+
+    public function hasOne(string $model, ?string $foreignKey = null, ?string $localKey = 'id'): self
+    {
+        $foreignKey = $foreignKey ?? strtolower($this->name) . '_id';
+        $this->definition['relationships'][] = [
+            'type' => 'hasOne',
+            'model' => $model,
+            'foreignKey' => $foreignKey,
+            'localKey' => $localKey
+        ];
+        return $this;
+    }
+
+    public function hasMany(string $model, ?string $foreignKey = null, ?string $localKey = 'id'): self
+    {
+        $foreignKey = $foreignKey ?? strtolower($this->name) . '_id';
+        $this->definition['relationships'][] = [
+            'type' => 'hasMany',
+            'model' => $model,
+            'foreignKey' => $foreignKey,
+            'localKey' => $localKey
+        ];
+        return $this;
+    }
+
+    public function belongsTo(string $model, ?string $foreignKey = null, ?string $ownerKey = 'id'): self
+    {
+        $foreignKey = $foreignKey ?? strtolower($model) . '_id';
+        $this->foreignId($foreignKey); /// auto add relationship id :D
+
+        $this->definition['relationships'][] = [
+            'type' => 'belongsTo',
+            'model' => $model,
+            'foreignKey' => $foreignKey,
+            'ownerKey' => $ownerKey
+        ];
+        return $this;
+    }
+
+    public function belongsToMany(
+        string $model,
+        ?string $table = null,
+        ?string $foreignPivotKey = null,
+        ?string $relatedPivotKey = null
+    ): self {
+        $table = $table ?? $this->createPivotTableName($this->name, $model);
+        $foreignPivotKey = $foreignPivotKey ?? strtolower($this->name) . '_id';
+        $relatedPivotKey = $relatedPivotKey ?? strtolower($model) . '_id';
+
+        $this->definition['relationships'][] = [
+            'type' => 'belongsToMany',
+            'model' => $model,
+            'table' => $table,
+            'foreignPivotKey' => $foreignPivotKey,
+            'relatedPivotKey' => $relatedPivotKey
+        ];
+        return $this;
+    }
+
+    protected function createPivotTableName(string $model1, string $model2): string
+    {
+        $models = [strtolower($model1), strtolower($model2)];
+        sort($models);
+        return implode('_', $models);
+    }
 }

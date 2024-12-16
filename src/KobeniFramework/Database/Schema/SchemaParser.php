@@ -17,66 +17,54 @@ class SchemaParser
         $models = $this->sortModelsByDependency($schema);
 
         foreach ($models as $modelName => $model) {
-            $columns = [];
-            $constraints = [];
-
-            foreach ($model['fields'] as $fieldName => $field) { //// is there anyway i can do this better for example recursive this loop to check each thing instead?
-                if ($fieldName === 'id') {
-                    $columns[] = sprintf(
-                        '`%s` %s NOT NULL DEFAULT UUID() PRIMARY KEY',
-                        $fieldName,
-                        $field['type']
-                    );
-                } else {
-                    $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
-                    $attributes = $this->generateAttributes($field['attributes'] ?? [], $fieldName);
-                    $columns[] = sprintf(
-                        '`%s` %s %s%s',
-                        $fieldName,
-                        $field['type'],
-                        $nullable,
-                        $attributes
-                    );
-                }
-
-                if (isset($field['attributes']) && in_array('@unique', $field['attributes'])) {
-                    $constraints[] = sprintf(
-                        'UNIQUE KEY `%s_unique` (`%s`)',
-                        $fieldName,
-                        $fieldName
-                    );
-                }
-            }
-
-            // Add foreign key constraints
-            foreach ($schema->getRelationships() as $relation) {
-                if (strtolower($relation['model']) === strtolower($modelName)) {
-                    $fk = $relation['foreign_key'][0];
-                    $constraints[] = sprintf(
-                        'KEY `%s_index` (`%s`)',
-                        $fk,
-                        $fk
-                    );
-                    $constraints[] = $this->generateConstraint($relation);
-                }
-            }
-
-            // Combine into CREATE TABLE
-            $allFields = array_merge($columns, $constraints);
-            $fieldsStr = implode(",\n    ", $allFields);
-
-            $sql = sprintf(
-                'CREATE TABLE IF NOT EXISTS `%s` (
-    %s
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;',
-                $model['name'],
-                $fieldsStr
+            // check if table exists
+            $checkTable = sprintf(
+                '$tableExists = $this->db->query("SELECT 1 FROM information_schema.tables WHERE table_schema = \'%s\' AND table_name = \'%s\'");',
+                'testingkobeni',
+                $model['name']
             );
 
-            $tables[] = sprintf('$this->db->query("%s");', addslashes($sql));
+            // store the complete check and alter logic
+            $alterLogic = [];
+            $alterLogic[] = '$this->db->query("SET FOREIGN_KEY_CHECKS=0;");';
+            $alterLogic[] = $checkTable;
+            $alterLogic[] = 'if (empty($tableExists)) {';
+
+            // create table logic
+            $createTable = $this->generateCreateTable($model);
+            $alterLogic[] = '    ' . $createTable;
+
+            $alterLogic[] = '} else {';
+
+            // alter table logic for new columns
+            foreach ($model['fields'] as $fieldName => $field) {
+                if ($fieldName !== 'id') {
+                    $columnDef = $this->generateColumnDefinition($fieldName, $field);
+                    $checkColumn = sprintf(
+                        '    $columnExists = $this->db->query("SELECT 1 FROM information_schema.columns WHERE table_schema = \'%s\' AND table_name = \'%s\' AND column_name = \'%s\'");',
+                        'testingkobeni',
+                        $model['name'],
+                        $fieldName
+                    );
+
+                    $alterLogic[] = $checkColumn;
+                    $alterLogic[] = '    if (empty($columnExists)) {';
+                    $alterLogic[] = sprintf(
+                        '        $this->db->query("ALTER TABLE `%s` ADD COLUMN %s");',
+                        $model['name'],
+                        $columnDef
+                    );
+                    $alterLogic[] = '    }';
+                }
+            }
+
+            $alterLogic[] = '}';
+            $alterLogic[] = '$this->db->query("SET FOREIGN_KEY_CHECKS=1;");';
+
+            $tables[] = implode("\n        ", $alterLogic);
         }
 
-        $tablesStr = $this->indentCode(implode("\n\n        ", $tables));
+        $migrations = implode("\n\n        ", $tables);
         $downMethod = $this->generateDownMethod($schema);
 
         return <<<PHP
@@ -88,19 +76,12 @@ class {$className} extends Migration
 {
     public function up(): void
     {
-        \$this->db->query("SET FOREIGN_KEY_CHECKS=0;");
-        \$this->db->query("DROP TABLE IF EXISTS `user`;");
-        \$this->db->query("DROP TABLE IF EXISTS `role`;");
-        \$this->db->query("SET FOREIGN_KEY_CHECKS=1;");
-
-        {$tablesStr}
+        {$migrations}
     }
     
     public function down(): void
     {
-        \$this->db->query("SET FOREIGN_KEY_CHECKS=0;");
         {$downMethod}
-        \$this->db->query("SET FOREIGN_KEY_CHECKS=1;");
     }
 }
 PHP;
@@ -225,5 +206,41 @@ PHP;
         $lines = explode("\n", $code);
         $indent = str_repeat(' ', $spaces);
         return implode("\n" . $indent, $lines);
+    }
+
+    protected function generateColumnDefinition(string $name, array $field): string
+    {
+        $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
+        $attributes = $this->generateAttributes($field['attributes'] ?? [], $name);
+        return sprintf('`%s` %s %s%s', $name, $field['type'], $nullable, $attributes);
+    }
+
+    protected function generateCreateTable($model): string
+    {
+        $columns = [];
+        $constraints = [];
+
+        foreach ($model['fields'] as $fieldName => $field) {
+            if ($fieldName === 'id') {
+                $columns[] = sprintf('`%s` %s NOT NULL DEFAULT UUID() PRIMARY KEY', $fieldName, $field['type']);
+            } else {
+                $nullable = $field['nullable'] ? 'NULL' : 'NOT NULL';
+                $attributes = $this->generateAttributes($field['attributes'] ?? [], $fieldName);
+                $columns[] = sprintf('`%s` %s %s%s', $fieldName, $field['type'], $nullable, $attributes);
+            }
+
+            if (isset($field['attributes']) && in_array('@unique', $field['attributes'])) {
+                $constraints[] = sprintf('UNIQUE KEY `%s_unique` (`%s`)', $fieldName, $fieldName);
+            }
+        }
+
+        $allFields = array_merge($columns, $constraints);
+        $fieldsStr = implode(",\n    ", $allFields);
+
+        return sprintf(
+            '$this->db->query("CREATE TABLE IF NOT EXISTS `%s` (\n    %s\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");',
+            $model['name'],
+            $fieldsStr
+        );
     }
 }
