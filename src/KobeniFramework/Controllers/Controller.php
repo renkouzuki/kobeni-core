@@ -2,6 +2,7 @@
 
 namespace KobeniFramework\Controllers;
 
+use KobeniFramework\Controllers\RequestDataMixing\MixedAccessData;
 use KobeniFramework\Database\DB;
 use KobeniFramework\Http\Response;
 use KobeniFramework\View\View;
@@ -20,9 +21,11 @@ abstract class Controller
     protected function getRequestData()
     {
         if ($_SERVER['CONTENT_TYPE'] === 'application/json') {
-            return json_decode(file_get_contents('php://input'), true);
+            $data = json_decode(file_get_contents('php://input'), true);
+            return new MixedAccessData($data); 
         }
-        return $_POST;
+
+        return new MixedAccessData($_POST);
     }
 
     protected function redirect($path)
