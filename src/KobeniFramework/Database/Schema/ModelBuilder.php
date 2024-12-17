@@ -129,40 +129,43 @@ class ModelBuilder
         return $this;
     }
 
-    public function hasOne(string $model, ?string $foreignKey = null, ?string $localKey = 'id'): self
+    public function hasOne(string $model, ?string $foreignKey = null, ?string $localKey = 'id', bool $nullable = false): self
     {
         $foreignKey = $foreignKey ?? strtolower($this->name) . '_id';
         $this->definition['relationships'][] = [
             'type' => 'hasOne',
             'model' => $model,
             'foreignKey' => $foreignKey,
-            'localKey' => $localKey
+            'localKey' => $localKey,
+            'nullable' => $nullable
         ];
         return $this;
     }
 
-    public function hasMany(string $model, ?string $foreignKey = null, ?string $localKey = 'id'): self
+    public function hasMany(string $model, ?string $foreignKey = null, ?string $localKey = 'id', bool $nullable = false): self
     {
         $foreignKey = $foreignKey ?? strtolower($this->name) . '_id';
         $this->definition['relationships'][] = [
             'type' => 'hasMany',
             'model' => $model,
             'foreignKey' => $foreignKey,
-            'localKey' => $localKey
+            'localKey' => $localKey,
+            'nullable' => $nullable
         ];
         return $this;
     }
 
-    public function belongsTo(string $model, ?string $foreignKey = null, ?string $ownerKey = 'id'): self
+    public function belongsTo(string $model, ?string $foreignKey = null, ?string $ownerKey = 'id', bool $nullable = false): self
     {
         $foreignKey = $foreignKey ?? strtolower($model) . '_id';
-        $this->foreignId($foreignKey); /// auto add relationship id :D
+        $this->foreignId($foreignKey)->nullable($nullable);
 
         $this->definition['relationships'][] = [
             'type' => 'belongsTo',
             'model' => $model,
             'foreignKey' => $foreignKey,
-            'ownerKey' => $ownerKey
+            'ownerKey' => $ownerKey,
+            'nullable' => $nullable  // Add nullable flag
         ];
         return $this;
     }
@@ -171,7 +174,8 @@ class ModelBuilder
         string $model,
         ?string $table = null,
         ?string $foreignPivotKey = null,
-        ?string $relatedPivotKey = null
+        ?string $relatedPivotKey = null,
+        bool $nullable = false
     ): self {
         $table = $table ?? $this->createPivotTableName($this->name, $model);
         $foreignPivotKey = $foreignPivotKey ?? strtolower($this->name) . '_id';
@@ -182,7 +186,8 @@ class ModelBuilder
             'model' => $model,
             'table' => $table,
             'foreignPivotKey' => $foreignPivotKey,
-            'relatedPivotKey' => $relatedPivotKey
+            'relatedPivotKey' => $relatedPivotKey,
+            'nullable' => $nullable
         ];
         return $this;
     }
@@ -192,5 +197,13 @@ class ModelBuilder
         $models = [strtolower($model1), strtolower($model2)];
         sort($models);
         return implode('_', $models);
+    }
+
+    public function nullable(bool $value = true): self
+    {
+        if ($this->lastField) {
+            $this->definition['fields'][$this->lastField]['nullable'] = $value;
+        }
+        return $this;
     }
 }

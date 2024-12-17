@@ -17,16 +17,15 @@ class SchemaParser
         $models = $this->sortModelsByDependency($schema);
 
         foreach ($models as $modelName => $model) {
+            $alterLogic = [];
+            $alterLogic[] = '$this->db->query("SET FOREIGN_KEY_CHECKS=0;");';
+
             // check if table exists
             $checkTable = sprintf(
                 '$tableExists = $this->db->query("SELECT 1 FROM information_schema.tables WHERE table_schema = \'%s\' AND table_name = \'%s\'");',
                 'testingkobeni',
                 $model['name']
             );
-
-            // store the complete check and alter logic
-            $alterLogic = [];
-            $alterLogic[] = '$this->db->query("SET FOREIGN_KEY_CHECKS=0;");';
             $alterLogic[] = $checkTable;
             $alterLogic[] = 'if (empty($tableExists)) {';
 
@@ -36,7 +35,27 @@ class SchemaParser
 
             $alterLogic[] = '} else {';
 
-            // alter table logic for new columns
+            // get all current columns
+            $alterLogic[] = sprintf(
+                '    $currentColumns = $this->db->query("SELECT COLUMN_NAME FROM information_schema.columns WHERE table_schema = \'%s\' AND table_name = \'%s\'");',
+                'testingkobeni',
+                $model['name']
+            );
+
+            // drop columns that no longer exist in schema
+            $alterLogic[] = '    $existingColumns = array_column($currentColumns, "COLUMN_NAME");';
+            $alterLogic[] = '    $schemaColumns = ' . var_export(array_keys($model['fields']), true) . ';';
+            $alterLogic[] = '    $columnsToRemove = array_diff($existingColumns, $schemaColumns);';
+            $alterLogic[] = '    foreach ($columnsToRemove as $column) {';
+            $alterLogic[] = '        if ($column !== "id") {';
+            $alterLogic[] = sprintf(
+                '            $this->db->query("ALTER TABLE `%s` DROP COLUMN `$column`");',
+                $model['name']
+            );
+            $alterLogic[] = '        }';
+            $alterLogic[] = '    }';
+
+            // modify or add columns
             foreach ($model['fields'] as $fieldName => $field) {
                 if ($fieldName !== 'id') {
                     $columnDef = $this->generateColumnDefinition($fieldName, $field);
@@ -54,7 +73,30 @@ class SchemaParser
                         $model['name'],
                         $columnDef
                     );
+                    $alterLogic[] = '    } else {';
+                    $alterLogic[] = sprintf(
+                        '        $this->db->query("ALTER TABLE `%s` MODIFY COLUMN %s");',
+                        $model['name'],
+                        $columnDef
+                    );
                     $alterLogic[] = '    }';
+                }
+            }
+
+            // handle relationship modifications
+            if (isset($model['relationships'])) {
+                foreach ($model['relationships'] as $relation) {
+                    if ($relation['type'] === 'belongsTo') {
+                        $foreignKey = $relation['foreignKey'];
+                        $nullable = $relation['nullable'] ?? false;
+
+                        $alterLogic[] = sprintf(
+                            '    $this->db->query("ALTER TABLE `%s` MODIFY COLUMN `%s` char(36) %s");',
+                            $model['name'],
+                            $foreignKey,
+                            $nullable ? 'NULL' : 'NOT NULL'
+                        );
+                    }
                 }
             }
 
