@@ -9,6 +9,9 @@
     "autoload": {
         "psr-4": {
             "KobeniFramework\\": "src/KobeniFramework/"
-        }
+        },
+        "files": [
+            "src/KobeniFramework/Validation/helpers.php"
+        ]
     }
 }
