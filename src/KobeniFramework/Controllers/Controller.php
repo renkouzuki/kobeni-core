@@ -32,16 +32,14 @@ abstract class Controller
 
     protected function validate(array $rules): MixedAccessData
     {
-        $this->req = $this->req ?? $this->getRequestData();
-        
+        if (!isset($this->req)) {
+            $this->req = $this->getRequestData();
+        }
+
         $validator = Validator::make($this->req);
-        
+
         if (!$validator->validate($rules)) {
-            return $this->json([
-                'status' => false,
-                'errors' => $validator->getErrors()
-            ], 422);
-            exit;
+            throw new \Exception(json_encode($validator->getErrors()), 422);
         }
 
         return $this->req;
