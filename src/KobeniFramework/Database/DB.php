@@ -79,7 +79,7 @@ class DB
                 ]
             );
         } catch (PDOException $e) {
-            throw new PDOException("Database connection failed: " . $e->getMessage() , $e->getCode());
+            throw new PDOException("Database connection failed: " . $e->getMessage() , 500);
         }
     }
 
@@ -100,7 +100,7 @@ class DB
             return $stmt->rowCount();
         } catch (\PDOException $e) {
             throw new \RuntimeException(
-                "Query execution failed: " . $e->getMessage() , $e->getCode()
+                "Query execution failed: " . $e->getMessage() , 500
             );
         }
     }
