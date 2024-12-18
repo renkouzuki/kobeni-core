@@ -5,10 +5,12 @@ namespace KobeniFramework\Controllers;
 use KobeniFramework\Controllers\RequestDataMixing\MixedAccessData;
 use KobeniFramework\Database\DB;
 use KobeniFramework\Http\Response;
+use KobeniFramework\Validation\Validator;
 use KobeniFramework\View\View;
 
 abstract class Controller
 {
+    protected $req;
     protected $db;
 
     public function __construct()
@@ -22,10 +24,27 @@ abstract class Controller
     {
         if ($_SERVER['CONTENT_TYPE'] === 'application/json') {
             $data = json_decode(file_get_contents('php://input'), true);
-            return new MixedAccessData($data); 
+            return new MixedAccessData($data);
         }
 
         return new MixedAccessData($_POST);
+    }
+
+    protected function validate(array $rules): MixedAccessData
+    {
+        $this->req = $this->req ?? $this->getRequestData();
+        
+        $validator = Validator::make($this->req);
+        
+        if (!$validator->validate($rules)) {
+            return $this->json([
+                'status' => false,
+                'errors' => $validator->getErrors()
+            ], 422);
+            exit;
+        }
+
+        return $this->req;
     }
 
     protected function redirect($path)

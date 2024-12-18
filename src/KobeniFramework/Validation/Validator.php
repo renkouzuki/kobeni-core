@@ -2,14 +2,23 @@
 
 namespace KobeniFramework\Validation;
 
+use ArrayAccess;
+use KobeniFramework\Controllers\RequestDataMixing\MixedAccessData;
+
 class Validator
 {
     protected $data;
-    protected $errors = [];
+    protected array $errors = [];
 
     public function __construct($data)
     {
-        $this->data = $data;
+        if ($data instanceof ArrayAccess) {
+            $this->data = $data;
+        } elseif (is_array($data)) {
+            $this->data = new MixedAccessData($data);
+        } else {
+            throw new \InvalidArgumentException('Data must be an array or implement ArrayAccess');
+        }
     }
 
     public static function make($data)

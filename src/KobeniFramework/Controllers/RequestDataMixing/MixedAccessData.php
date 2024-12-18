@@ -46,4 +46,8 @@ class MixedAccessData implements ArrayAccess
     {
         $this->data[$name] = $value;
     }
+
+    public function toArray(): array{
+        return $this->data;
+    }
 }
