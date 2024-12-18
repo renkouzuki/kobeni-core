@@ -53,7 +53,7 @@ class DB
             }
         }
 
-        throw new \RuntimeException('Database configuration not found in any of the expected locations');
+        throw new \RuntimeException('Database configuration not found in any of the expected locations' , 404);
     }
 
     protected static function createConnection(): PDO
@@ -79,7 +79,7 @@ class DB
                 ]
             );
         } catch (PDOException $e) {
-            throw new PDOException("Database connection failed: " . $e->getMessage());
+            throw new PDOException("Database connection failed: " . $e->getMessage() , $e->getCode());
         }
     }
 
@@ -100,7 +100,7 @@ class DB
             return $stmt->rowCount();
         } catch (\PDOException $e) {
             throw new \RuntimeException(
-                "Query execution failed: " . $e->getMessage()
+                "Query execution failed: " . $e->getMessage() , $e->getCode()
             );
         }
     }
