@@ -22,6 +22,8 @@ abstract class Controller
 
     protected function getRequestData()
     {
+        var_dump("it triggered error");
+
         if ($_SERVER['CONTENT_TYPE'] === 'application/json') {
             $data = json_decode(file_get_contents('php://input'), true);
             return new MixedAccessData($data);
