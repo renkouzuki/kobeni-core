@@ -3,21 +3,20 @@
 namespace KobeniFramework\Controllers;
 
 use KobeniFramework\Controllers\RequestDataMixing\MixedAccessData;
-use KobeniFramework\Database\DB;
 use KobeniFramework\Http\Response;
 use KobeniFramework\Validation\Validator;
 use KobeniFramework\View\View;
 
 abstract class Controller
 {
+    use ControllerInitializer;
+
     protected $req;
     protected $db;
 
-    public function __construct()
+    public function __construct() 
     {
-        if ($this->needsDatabase()) {
-            $this->db = DB::getInstance();
-        }
+        $this->initializeController();
     }
 
     protected function getRequestData()
