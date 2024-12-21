@@ -3,6 +3,7 @@
 namespace KobeniFramework\Controllers;
 
 use KobeniFramework\Controllers\RequestDataMixing\MixedAccessData;
+use KobeniFramework\Database\DB;
 use KobeniFramework\Http\Response;
 use KobeniFramework\Validation\Validator;
 use KobeniFramework\View\View;
@@ -21,9 +22,9 @@ abstract class Controller
 
     protected function getRequestData()
     {
-        var_dump("it triggered error");
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
 
-        if ($_SERVER['CONTENT_TYPE'] === 'application/json') {
+        if ($contentType === 'application/json') {
             $data = json_decode(file_get_contents('php://input'), true);
             return new MixedAccessData($data);
         }
