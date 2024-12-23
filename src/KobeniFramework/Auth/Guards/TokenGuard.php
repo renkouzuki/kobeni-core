@@ -151,6 +151,25 @@ class TokenGuard extends AbstractGuard
         }
     }
 
+    public function check(): bool
+    {
+        if ($this->user !== null) {
+            return true;
+        }
+
+        if ($token = $this->getTokenFromRequest()) {
+            try {
+                $payload = $this->jwt->decode($token);
+                $this->user = $this->retrieveById($payload['sub']);
+                return $this->user !== null;
+            } catch (\Exception $e) {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
     protected function getTokenFromRequest(): ?string
     {
         $header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
