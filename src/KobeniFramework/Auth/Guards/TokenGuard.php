@@ -4,6 +4,7 @@ namespace KobeniFramework\Auth\Guards;
 
 use KobeniFramework\Auth\JWT;
 use KobeniFramework\Auth\Exceptions\{AuthenticationException, TokenException};
+use PDO;
 
 class TokenGuard extends AbstractGuard
 {
@@ -99,7 +100,9 @@ class TokenGuard extends AbstractGuard
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(array_values($query));
-        return $stmt->fetch();
+        $result = $stmt->fetch(PDO::FETCH_OBJ);
+
+        return $result;
     }
 
     protected function validateCredentials($user, array $credentials): bool

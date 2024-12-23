@@ -3,6 +3,7 @@
 namespace KobeniFramework\Auth\Guards;
 
 use KobeniFramework\Auth\Exceptions\AuthenticationException;
+use PDO;
 
 class SessionGuard extends AbstractGuard
 {
@@ -81,7 +82,9 @@ class SessionGuard extends AbstractGuard
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute(array_values($query));
-        return $stmt->fetch();
+        $result = $stmt->fetch(PDO::FETCH_OBJ);
+
+        return $result;
     }
 
     protected function validateCredentials($user, array $credentials): bool
