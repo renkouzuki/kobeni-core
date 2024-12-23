@@ -156,17 +156,30 @@ class TokenGuard extends AbstractGuard
         if ($this->user !== null) {
             return true;
         }
-
+    
         if ($token = $this->getTokenFromRequest()) {
             try {
                 $payload = $this->jwt->decode($token);
+                
+                if ($payload['type'] === 'refresh') {
+                    if (!$this->validateRefreshToken($token)) {
+                        return false;
+                    }
+                }
+                
+                if ($payload['type'] === 'access' && isset($payload['sub'])) {
+                    if ($this->isUserTokensRevoked($payload['sub'])) {
+                        return false;
+                    }
+                }
+    
                 $this->user = $this->retrieveById($payload['sub']);
                 return $this->user !== null;
             } catch (\Exception $e) {
                 return false;
             }
         }
-
+    
         return false;
     }
 
@@ -179,5 +192,22 @@ class TokenGuard extends AbstractGuard
         }
 
         return null;
+    }
+
+    protected function isUserTokensRevoked(string $userId): bool
+    {
+        $stmt = $this->db->prepare("
+        SELECT EXISTS(
+            SELECT 1 
+            FROM refresh_tokens 
+            WHERE user_id = ? 
+              AND revoked = 0 
+              AND expires_at > NOW()
+        ) as has_valid_token
+    ");
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return !$result['has_valid_token'];
     }
 }
