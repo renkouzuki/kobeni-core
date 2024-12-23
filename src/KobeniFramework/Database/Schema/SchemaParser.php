@@ -7,6 +7,9 @@ use KobeniFramework\Database\DB;
 class SchemaParser
 {
     public function getDatabaseName(): string{
+        
+        DB::loadEnvironment();
+
         $config = DB::loadConfig();
         return $config['DB_DATABASE'];
     }

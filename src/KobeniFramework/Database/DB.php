@@ -20,7 +20,7 @@ class DB
         return self::$instance;
     }
 
-    protected static function loadEnvironment(): void
+    public static function loadEnvironment(): void
     {
         $paths = [
             getcwd() . '/.env',
