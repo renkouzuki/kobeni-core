@@ -87,7 +87,7 @@ class TokenGuard extends AbstractGuard
 
     protected function retrieveById($id)
     {
-        $stmt = $this->db->prepare("SELECT * FROM users WHERE id = ?");
+        $stmt = $this->db->prepare("SELECT * FROM user WHERE id = ?");
         $stmt->execute([$id]);
         return $stmt->fetch();
     }
@@ -95,7 +95,7 @@ class TokenGuard extends AbstractGuard
     protected function retrieveByCredentials(array $credentials)
     {
         $query = array_filter($credentials, fn($key) => $key !== 'password', ARRAY_FILTER_USE_KEY);
-        $sql = "SELECT * FROM users WHERE " . implode(' AND ', array_map(fn($field) => "$field = ?", array_keys($query)));
+        $sql = "SELECT * FROM user WHERE " . implode(' AND ', array_map(fn($field) => "$field = ?", array_keys($query)));
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(array_values($query));
