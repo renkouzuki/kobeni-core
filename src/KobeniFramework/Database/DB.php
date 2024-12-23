@@ -36,7 +36,7 @@ class DB
         }
     }
 
-    protected static function loadConfig(): array
+    public static function loadConfig(): array
     {
         $possiblePaths = [
             getcwd() . '/config/Database.php',

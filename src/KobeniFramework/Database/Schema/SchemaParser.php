@@ -2,8 +2,15 @@
 
 namespace KobeniFramework\Database\Schema;
 
+use KobeniFramework\Database\DB;
+
 class SchemaParser
 {
+    public function getDatabaseName(): string{
+        $config = DB::loadConfig();
+        return $config['DB_DATABASE'];
+    }
+
     public function generateMigration(Schema $schema): string
     {
         $timestamp = date('Y_m_d_His');
@@ -15,6 +22,7 @@ class SchemaParser
     {
         $tables = [];
         $models = $this->sortModelsByDependency($schema);
+        $dbName = $this->getDatabaseName();
 
         foreach ($models as $modelName => $model) {
             $alterLogic = [];
@@ -23,7 +31,7 @@ class SchemaParser
             // check if table exists
             $checkTable = sprintf(
                 '$tableExists = $this->db->query("SELECT 1 FROM information_schema.tables WHERE table_schema = \'%s\' AND table_name = \'%s\'");',
-                'testingkobeni',
+                $dbName,
                 $model['name']
             );
             $alterLogic[] = $checkTable;
@@ -38,7 +46,7 @@ class SchemaParser
             // get all current columns
             $alterLogic[] = sprintf(
                 '    $currentColumns = $this->db->query("SELECT COLUMN_NAME FROM information_schema.columns WHERE table_schema = \'%s\' AND table_name = \'%s\'");',
-                'testingkobeni',
+                $dbName,
                 $model['name']
             );
 
@@ -61,7 +69,7 @@ class SchemaParser
                     $columnDef = $this->generateColumnDefinition($fieldName, $field);
                     $checkColumn = sprintf(
                         '    $columnExists = $this->db->query("SELECT 1 FROM information_schema.columns WHERE table_schema = \'%s\' AND table_name = \'%s\' AND column_name = \'%s\'");',
-                        'testingkobeni',
+                        $dbName,
                         $model['name'],
                         $fieldName
                     );
