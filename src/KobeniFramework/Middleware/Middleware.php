@@ -20,7 +20,7 @@ abstract class Middleware
 
     protected function needsDatabase()
     {
-        return false;
+        return true;
     }
 
     protected function json($data, $status = 200)
