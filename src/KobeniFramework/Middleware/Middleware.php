@@ -2,17 +2,20 @@
 
 namespace KobeniFramework\Middleware;
 
+use KobeniFramework\Auth\AuthManager;
 use KobeniFramework\Database\DB;
 use KobeniFramework\Http\Response;
 
 abstract class Middleware
 {
     protected $db;
+    protected $auth;
 
     public function __construct()
     {
-        if ($this->needsDatabase()) {
+        if($this->needsDatabase()){
             $this->db = DB::getInstance();
+            $this->auth = new AuthManager($this->db);
         }
     }
 

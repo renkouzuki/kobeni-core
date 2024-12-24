@@ -2,6 +2,7 @@
 
 namespace KobeniFramework\Controllers;
 
+use KobeniFramework\Auth\AuthManager;
 use KobeniFramework\Controllers\RequestDataMixing\MixedAccessData;
 use KobeniFramework\Database\DB;
 use KobeniFramework\Http\Response;
@@ -14,10 +15,15 @@ abstract class Controller
 
     protected $req;
     protected $db;
+    protected $auth;
 
     public function __construct() 
     {
         $this->initializeController();
+        if($this->needsDatabase()){
+            $this->db = DB::getInstance();
+            $this->auth = new AuthManager($this->db);
+        }
     }
 
     protected function getRequestData()

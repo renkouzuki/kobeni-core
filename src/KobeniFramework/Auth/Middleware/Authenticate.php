@@ -14,7 +14,7 @@ class Authenticate
         $this->auth = $auth;
     }
 
-    public function handle($request, $next)
+    public function handle($next)
     {
         if (!$this->auth->check()) {
             throw new AuthenticationException(
@@ -23,6 +23,6 @@ class Authenticate
             );
         }
 
-        return $next($request);
+        return $next();
     }
 }

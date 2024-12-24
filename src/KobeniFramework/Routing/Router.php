@@ -137,18 +137,28 @@ class Router
         if (is_array($route->getAction()) && isset($route->getAction()['middleware'])) {
             // var_dump('Checking middleware'); 
             // var_dump($route->getAction());   
-            
+
             $middlewares = (array) $route->getAction()['middleware'];
-            
+
             foreach ($middlewares as $middleware) {
-                $middlewareClass = "App\\Middleware\\{$middleware}Middleware"; /// this is suffix middleware i keep forgot about this
-                // var_dump($middlewareClass);  
-                
+                if ($middleware === 'Kobeni:Auth') {
+                    $middlewareClass = "KobeniFramework\\Auth\\Middleware\\Authenticate";
+                } else {
+                    $middlewareClass = "App\\Middleware\\{$middleware}Middleware";
+                }
+
                 if (!class_exists($middlewareClass)) {
                     throw new \RuntimeException("Middleware {$middleware} not found: {$middlewareClass}");
                 }
-                
-                $middlewareInstance = new $middlewareClass();
+
+                if ($middlewareClass === "KobeniFramework\\Auth\\Middleware\\Authenticate") {
+                    $db = DB::getInstance();
+                    $auth = new \KobeniFramework\Auth\AuthManager($db);
+                    $middlewareInstance = new $middlewareClass($auth);
+                } else {
+                    $middlewareInstance = new $middlewareClass();
+                }
+
                 return $middlewareInstance->handle($callback);
             }
         }
@@ -170,11 +180,11 @@ class Router
         if (is_callable($action)) {
             return call_user_func_array($action, $parameters);
         }
-    
+
         if (is_array($action) && isset($action['uses'])) {
             $action = $action['uses'];
         }
-    
+
         list($controller, $method) = explode('@', $action);
         $controllerInstance = new $controller();
         return call_user_func_array([$controllerInstance, $method], $parameters);
